@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
-import 'core/theme/app_theme.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-void main() {
+import 'core/injection_container.dart';
+import 'core/services/local_storage_service.dart';
+import 'core/theme/app_theme.dart';
+import 'features/acta_escrutinio/presentation/bloc/acta_bloc.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/pages/auth_wrapper.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await LocalStorageService.init();
+  sl.init();
   runApp(const MyApp());
 }
 
@@ -10,29 +20,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Veeduría Electoral',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const InitialScreen(),
-    );
-  }
-}
-
-class InitialScreen extends StatelessWidget {
-  const InitialScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Plantilla Prueba'),
-      ),
-      body: Center(
-        child: Text(
-          '¡Paleta de colores y arquitectura base lista!',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ActaBloc>.value(value: sl.actaBloc),
+        BlocProvider<AuthBloc>.value(value: sl.authBloc),
+      ],
+      child: MaterialApp(
+        title: 'Veeduría Electoral',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        home: const AuthWrapper(),
       ),
     );
   }
