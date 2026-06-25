@@ -74,3 +74,25 @@
 - El flujo debe ser: leer `.context/` primero → seguir el `roadmap.md` fase por fase.
 - **Antes de codificar:** el usuario debe completar la **Fase 0** (crear proyecto Appwrite Cloud y obtener credenciales).
 - La dependencia de blur es `image_blur_detection: ^1.0.1` (ya incluida en Fase 1 del roadmap).
+
+---
+
+## Sesión: Pivotar a Estrategia Offline-First (Examen)
+**Estado:** Finalizada.
+**Fecha:** 2026-06-25
+
+### Objetivos logrados:
+1. **Análisis de la Rúbrica del Examen:**
+   - Se leyó y analizó el documento `prueba2.docx` con las instrucciones detalladas del examen (Control Electoral para Organización Política).
+   - Se crearon las directrices completas en `.context/evaluacion.md` abarcando los 115 puntos posibles (100 puntos base + 15 puntos extra por modo offline).
+   - Se identificaron validaciones críticas como: Cédula obligatoria como username, votos nulos/blancos/candidatos <= total sufragantes.
+
+2. **Pivote Estratégico (Bloqueo Appwrite):**
+   - Ante el bloqueo temporal por límite de peticiones de Appwrite, se ha decidido pausar el backend.
+   - El nuevo Sprint se centrará en el **Desarrollo Offline-First**. Esto permite ganar tiempo desarrollando la Persistencia Local (Hive), Interfaz UI, Validaciones y Lógica de Negocio (BLoCs) de manera completamente funcional sin conexión, cumpliendo con los puntos extra.
+
+3. **Actualización de Archivos Maestros `.context`:**
+   - `evaluacion.md` — Creado como resumen de rúbricas.
+   - `rules.md` — Actualizado incorporando reglas estrictas del examen y uso de BLoC sin pantallas en blanco.
+   - `roadmap.md` — Reescrito por completo, dividiendo el trabajo en Fases adaptadas a un desarrollo Offline (Hive, UI Veedor, BLoC explícito) posponiendo la reconexión con Appwrite a la fase final.
+   - `session.md` — Actualizado con el registro de esta sesión.
