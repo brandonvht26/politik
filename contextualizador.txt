@@ -1,0 +1,19 @@
+Actúa como un [profesional] experto en [área/framework] aplicando soluciones con [Stack tecnológico si es que lo hay]
+
+Haz un análisis profundo de mi proyecto y determina el estado actual del mismo. Al terminar de analizar, procede a generar y trabajar el directorio ".context" en la raíz del proyecto, en este directorio vivirán los archivos markdown (.md), mismos que servirán para contextualizar el estado real de mi proyecto a otras IA o colaboradores del proyecto.
+
+En el directorio .context deberás generar:
+
+rules.md --> Aquí se definen todas las reglas de oro del proyecto: [Stack tecnológico del proyecto, idioma, guías de estilo, lenguaje de dev y frameworks, etc.]. Este archivo actúa como el índice y la constitución del directorio .context". Esto le ayuda a la IA a entender que rules.md mandan sobre los demás o como se relacionan (cuando deberían modificarse/eliminarse, obviamente estas acciones deben consultar mi autorización). Este archivo en específico solo puede modificarse siempre y cuando yo dé la autorización.
+
+architecture.md --> Describe la arquitectura que sigue el proyecto, evita que otro modelo invente estructuras o flujos raros. No puede eliminarse ni actualizarse, entonces sé muy riguroso en detallar aquí todo correctamente.
+
+roadmap.md --> Este es un archivo volátil, solo se llenará cuando ejecutemos un plan grande, en cuyo caso, yo debo dar la autorización de planificar el roadmap diario o por sprint. Puede actualizarse, pero no eliminarse, por supuesto, con autorización mía. Para cada fase o punto a desarrollar para el roadmap, indica además cual es el modelo más eficiente y apropiado del siguiente stack: [Aquí van sus modelos disponibles].
+
+session.md --> Este es un archivo volátil. Siempre se reescribirá con todo lo que se ha trabajado en la jornada. Es actualizable pero no eliminable, con autorización mía. También puedo sugerir cuando debe escribirse.
+
+skills/ --> Directorio donde vivirán los .md SKILL.md, dentro del directorio, los SKILL.md vivirán separados para que estén perfectamente identificadas.
+
+skills/ui/SKILL.md --> Skill en el que se definirá el patrón de diseño que seguirá la aplicación.
+skills/alerts/SKILL.md --> Skill en el que se define la lista de fallos posibles y como debe reaccionar el sistema.
+skills/ai/SKILL.md --> Skill que define el comportamiento que debe seguir una IA en caso de que integremos una en el proyecto.
