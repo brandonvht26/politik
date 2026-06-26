@@ -1,78 +1,52 @@
-# Roadmap
+# Roadmap de Implementación (Sprint: Proyecto Final 115 pts)
 
-> **ATENCIÓN:** Archivo volátil. Solo se llena/actualiza cuando se ejecuta un plan grande y con **autorización explícita** del usuario. No puede eliminarse.
+> **ATENCIÓN:** Archivo actualizado tras la consolidación de requerimientos (`prueba2.docx`). Las IAs (Opencode, etc) deben seguir estas fases estrictamente en orden.
 
-## Sprint Actual: Flujo de Veeduría "Offline-First" (Puntos Extra)
-
-**Autorizado por el usuario:** 2025-06-25
-**Objetivo:** Desarrollar todo el flujo crítico del Veedor de Mesa sin dependencia temporal de Appwrite (debido a rate limits). Se priorizará la UI, BLoC, Entidades y persistencia local usando Hive para asegurar los 15 puntos extra del examen.
-
----
-
-### Fase 1: Setup Local & Entidades de Dominio
+## Fase 1: Setup Core & Entidades (Offline-First)
 **Estado:** ⬜ Pendiente
 
-**Archivos a crear:**
-- Entidades puras en `lib/features/acta_escrutinio/domain/entities/` (Acta, Votos, JRV).
-- Entidades de usuario `lib/features/auth/domain/entities/user_entity.dart`.
-- Setup de dependencias: agregar `hive`, `hive_flutter`, `geolocator`.
+**Tareas:**
+- Crear algoritmo de validación de Cédula Ecuatoriana (Módulo 10) en `lib/core/utils/cedula_validator.dart`.
+- Inicializar **Hive** en `lib/core/services/local_storage_service.dart`.
+- Crear modelos/entidades para Veedores, Recintos y Actas (preparados para Hive `hive_generator`).
 
-### Fase 2: Persistencia Local (Hive)
+## Fase 2: Módulo de Autenticación & Usuarios (Appwrite + Bloc)
 **Estado:** ⬜ Pendiente
 
-**Archivos a crear:**
-- `lib/core/services/local_storage_service.dart` — Inicialización de Hive.
-- `lib/features/acta_escrutinio/data/models/` — Modelos Hive (adaptadores).
-- `lib/features/acta_escrutinio/data/datasources/acta_local_data_source.dart` — Guardar y leer actas pendientes de sincronizar (`isSynced = false`).
+**Tareas:**
+- Integrar `appwrite` SDK.
+- **UI & Bloc:** Pantalla de Login (Cédula + Contraseña).
+- **Lógica Mapeo:** Convertir Cédula a `[cedula]@politik.com` antes de llamar a Appwrite Auth.
+- **Cambio de Clave Forzoso:** Si al loguearse la clave usada es `Ecuador2026`, redirigir obligatoriamente a una pantalla `ForcePasswordChangePage`.
+- Guardar sesión y rol del usuario localmente para mantener persistencia offline.
 
-### Fase 3: Interfaz y Flujo de Veedor
+## Fase 3: Dashboards (Provincial y Recinto)
 **Estado:** ⬜ Pendiente
 
-**Pantallas:**
-- `MisMesasPage`: Listado de JRV asignadas (datos mockeados por ahora).
-- `ActaFormPage`: Formulario con validación estricta (Votos Candidatos + Blancos + Nulos <= Sufragantes).
-- `CameraPage`: Integración de `image_picker` con `image_blur_detection` para rechazar fotos borrosas. Captura simultánea de GPS con `geolocator`.
+**Tareas:**
+- **Provincial:** 
+  - Pantalla de lista de recintos. 
+  - Formulario de creación de recintos y de Coordinadores de Recinto.
+  - Gráficos/Dashboard de votos consolidados.
+- **Recinto:** 
+  - Pantalla para listar JRVs.
+  - Formulario de creación de Veedores de Mesa (pidiendo Cédula, Nombres, Correo Real, etc).
+  - Funcionalidad para reasignar veedor a otra mesa.
 
-### Fase 4: Manejo de Estado (BLoC)
+## Fase 4: Flujo Crítico del Veedor (Offline + UI)
 **Estado:** ⬜ Pendiente
 
-- Implementar `ActaBloc` con estados explícitos: `ActaLoading`, `ActaSuccess`, `ActaError`.
-- Prohibido dejar pantallas en blanco. Mostrar Snackbars y Loading Spinners.
+**Tareas:**
+- **UI:** `MisMesasPage` listando las mesas asignadas al veedor.
+- **Formulario:** Ingreso de votos (5 partidos, nulos, blancos, sufragantes). Validar: `Suma Votos <= Sufragantes`.
+- **Cámara & Sensores:** Integrar `image_picker` + `image_blur_detection`. Rechazar foto si la varianza Laplaciana es muy baja. Adquirir lat/long con `geolocator`.
+- **Hive:** Guardar el registro completo en la caja local de actas con el estado `isSynced = false`.
 
-### Fase 5: Autenticación (UI) & Roles
+## Fase 5: Servicio de Sincronización (Appwrite Cloud)
 **Estado:** ⬜ Pendiente
 
-- Pantalla de Login exigiendo **Cédula de Identidad**.
-- Redirección basada en Rol (Coordinador Provincial, Coordinador de Recinto, Veedor).
-- Flujo de cambio de contraseña forzoso si la clave es `Ecuador2026`.
-
-### Fase 6: Reconexión Appwrite (Sincronización a la nube)
-**Estado:** ⏸️ En pausa (hasta liberar IP)
-
-- Mapeo de la Cédula a un email interno (`cedula@politik.com`) para `createEmailPasswordSession`.
-- Sincronización en segundo plano de actas de Hive hacia Appwrite.
-- Envío de enlace de recuperación (Password Recovery).
-
----
-
-## Stack de Modelos de Inteligencia Artificial Disponibles
-Para cada fase del roadmap, se debe asignar el modelo más apropiado:
-
-- DeepSeek V4 Flash
-- Kimi K2.6
-- MiMo V2.5
-- DeepSeek V4 Pro
-- GLM-5.1
-- Qwen3.7 Max
-- Kimi K2.7 Code
-- MiniMax M3 (3x usage)
-- MiMo V2.5 Pro
-- MiniMax M2.7
-- Qwen3.7 Plus
-- Qwen3.6 Plus
-- GLM-5
-- MiMo V2.5 Free
-- North Mini Code Free
-- Nemotron 3 Ultra Free
-- DeepSeek V4 Flash Free
-- Big Pickle
+**Tareas:**
+- Background worker / Listener de conectividad (`connectivity_plus`).
+- Al detectar red, iterar sobre la caja Hive buscando `isSynced == false`.
+- Subir foto al **Storage Bucket** -> Obtener `image_id`.
+- Guardar documento en **Database** -> Si es exitoso, actualizar Hive a `isSynced = true`.
