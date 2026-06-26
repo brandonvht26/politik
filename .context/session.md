@@ -93,3 +93,51 @@ flutter test          # All tests passed!
 - Se agregó la dependencia `dart_appwrite` para creación jerárquica de usuarios mediante API Key.
 - Se actualizó `SessionModel` para incluir `mesaId`, necesario para el flujo del veedor.
 - Se dejó compatibilidad legacy con la caja `actas` (modelo anterior) para no romper código previo.
+
+---
+
+## Sesión: Cierre del Ciclo — Documentación para la Defensa Académica (Finalizada)
+**Fecha:** 2026-06-26
+**Herramienta:** OpenCode (Kimi k2.7-code)
+**Estado:** ✅ Ciclo cerrado al 100%
+
+### Resumen ejecutivo de cierre
+Con la Fase 5 (Sincronización en Segundo Plano) completada y verificada, se cerró el ciclo de desarrollo del proyecto **Politik**. Las cinco fases del roadmap fueron implementadas respetando en todo momento los pilares de **Clean Architecture**, **BLoC**, **Vertical Slicing** y **Offline-First**. El código pasa `flutter analyze` sin errores y la suite de pruebas está al día.
+
+### Cierre por fases
+| Fase | Entregable clave | Estado |
+|---|---|---|
+| **Fase 1** — Setup Core & Entidades | Validador de cédula Módulo 10, Hive local, entidades/modelos, adaptadores generados | ✅ |
+| **Fase 2** — Autenticación & Usuarios | AuthRepository con Appwrite, login por cédula, cambio forzoso de contraseña, AuthBloc, AuthWrapper | ✅ |
+| **Fase 3** — Dashboards | Dashboards Provincial/Recinto, creación jerárquica de usuarios con `dart_appwrite` y API Key | ✅ |
+| **Fase 4** — Flujo del Veedor | ActaBloc, validación `sumaVotos <= sufragantes`, captura de foto con validación de nitidez, GPS, guardado offline Hive | ✅ |
+| **Fase 5** — Sincronización | `SyncService` con `connectivity_plus`, subida a Storage + documento en `actas`, marca `isSynced = true` solo tras éxito remoto | ✅ |
+
+### Decisiones arquitectónicas preservadas hasta el final
+- **Clean Architecture:** Dominio independiente de frameworks; repositorios de Appwrite y Hive intercambiables por contratos.
+- **BLoC:** Estados explícitos (`AuthLoading`, `AuthSuccess`, `ActaPhotoCaptured`, etc.) garantizan que nunca se presente una pantalla en blanco.
+- **Offline-First:** `ActaEscrutinioLocalModel` con `isSynced = false` se guarda en Hive; `SyncService` sube cuando hay conexión y usuario autenticado.
+- **Background Sync:** Escucha simultánea de `Connectivity().onConnectivityChanged` y `_authBloc.stream`; nunca bloquea la UI.
+
+### Documentación generada para la defensa
+- Se actualizó `.context/defensa.md` con argumentos técnicos sólidos para la sustentación:
+  1. Clean Architecture + BLoC y la prohibición de pantallas en blanco (`AuthWrapper`, `CircularProgressIndicator`).
+  2. Appwrite vs Supabase: confiabilidad ante picos de concurrencia y rate limits.
+  3. Estrategia Offline-First, Hive, `isSynced`, `connectivity_plus` y Background Sync (15 pts extra).
+  4. Validación de nitidez con Varianza del Laplaciano y GPS infalible con `geolocator`.
+
+### Verificación final del proyecto
+```bash
+flutter pub get
+flutter pub run build_runner build --delete-conflicting-outputs
+flutter analyze       # No issues found
+flutter test          # All tests passed
+```
+
+### Lecciones y notas de cierre
+- La separación en capas permitió implementar la Fase 5 sin modificar la UI del veedor.
+- El uso de `dart_appwrite` con API Key fue esencial para la creación jerárquica de usuarios desde Flutter.
+- La estrategia `isSynced` + reintento por acta individual hace la sincronización resistente a fallos parciales.
+- La validación local de fotos borrosas evita subir basura al Storage y asegura evidencia electoral útil.
+
+> **Ciclo de desarrollo concluido.** El proyecto está listo para compilación, pruebas en dispositivo y defensa académica.

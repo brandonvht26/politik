@@ -49,6 +49,43 @@ LoginPage → LoginRequested → AuthBloc → AuthRepository → Appwrite
 
 La UI solo conoce eventos y estados; la implementación de Appwrite está oculta detrás del repositorio.
 
+### 1.4 Anti-patrón de la pantalla en blanco: `AuthWrapper` + `CircularProgressIndicator`
+
+Una de las reglas de oro del proyecto es **prohibir pantallas en blanco** durante cualquier transición de estado. Para garantizarlo, usamos un `AuthWrapper` como raíz de la app (`home: const AuthWrapper()` en `main.dart`). Este widget reacciona a cada estado del `AuthBloc`:
+
+```dart
+BlocBuilder<AuthBloc, AuthState>(
+  builder: (context, state) {
+    if (state is AuthLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (state is AuthRequiresPasswordChange) {
+      return const ForcePasswordChangePage();
+    }
+
+    if (state is AuthSuccess) {
+      final rol = state.user.rol;
+      if (rol == 'provincial') return const ProvincialDashboardPage();
+      if (rol == 'recinto') return const RecintoDashboardPage();
+      return const MisMesasPage();
+    }
+
+    return const LoginPage();
+  },
+)
+```
+
+**Resultado:** Desde el arranque de la app hasta la navegación post-login, el usuario siempre ve:
+- Un `CircularProgressIndicator` mientras se restaura la sesión desde Hive.
+- La página de cambio de contraseña si aplica.
+- El dashboard correcto según el rol.
+- La pantalla de login si no hay sesión.
+
+Este patrón se replica en cada feature: `LoginPage`, `ChangePasswordPage`, `ProvincialDashboardPage`, `RecintoDashboardPage` y `CameraPage` muestran un indicador de carga en sus estados intermedios. Nunca dejamos al usuario frente a una pantalla vacía sin retroalimentación.
+
 ---
 
 ## 2. ¿Por qué Appwrite sobre Supabase?
@@ -91,6 +128,23 @@ Usamos **Appwrite** porque:
 3. **Document Security** facilita restringir que un veedor solo vea actas de su recinto.
 
 > **Nota:** La API Key de Appwrite se mantiene en el archivo `.env` y debe configurarse con permisos mínimos (`users.write`, `buckets.files.write`, `databases.collections.documents.write`).
+
+### 2.5 Escenario crítico: la defensa en vivo
+
+Imagina la siguiente situación frente al docente: 10–20 estudiantes abren la app al mismo tiempo, presionan "Login", suben fotos de actas y crean documentos. Con Supabase gratuito, es probable que varios de esos usuarios reciban:
+
+```
+429 Too Many Requests
+```
+
+La pantalla se queda cargando, el docente ve la app fallar en vivo y la nota se resiente. Ese riesgo es inaceptable en una sustentación académica.
+
+**Appwrite mitiga este riesgo** porque:
+1. Los límites se manejan por proyecto completo con mayor tolerancia a picos (burst) en el plan gratuito.
+2. Los servicios están separados: un pico en Storage no afecta Auth ni Database.
+3. La latencia es predecible y la respuesta ante errores es controlada desde el BLoC con estados de error visibles.
+
+> **Decisión de arquitectura:** Elegimos Appwrite no por moda, sino por **confiabilidad operacional** durante la demo. Un backend que se cae en vivo es un proyecto que no se defiende.
 
 ---
 
@@ -162,7 +216,32 @@ Para cada acta con `isSynced == false`:
    await actasBox.put(uuid, acta.copyWith(isSynced: true));
    ```
 
-### 3.5 Manejo de fallos
+### 3.5 Manejo de conflictos y reputación (los 15 puntos extra)
+
+La estrategia offline-first no es solo "guardar local y subir después". Para asegurar los **15 puntos extra** de la rúbrica, diseñamos un protocolo robusto:
+
+1. **Identificador único por acta:** Cada acta local tiene un `uuid` generado en el dispositivo. Ese `uuid` es la clave de Hive y evita duplicados accidentales.
+2. **Marcador atómico `isSynced`:** Solo se cambia a `true` cuando **ambas** operaciones remotas (Storage + Database) han terminado exitosamente. Si algo falla en el paso 2, el registro local permanece `false` y se reintenta en el próximo ciclo.
+3. **Reintento por acta individual:** Si una acta falla, no se cancelan las demás. El bucle continúa con la siguiente, y la acta fallida se reintentará cuando haya conexión estable.
+4. **No bloqueo de la UI:** El `SyncService` opera en background a través de streams (`connectivity_plus` + `AuthBloc`). El veedor puede seguir ingresando actas mientras otras se sincronizan.
+5. **Resiliencia a cierres de app:** Como los datos viven en Hive, una app cerrada o un celular reiniciado no pierden las actas pendientes. Al volver a abrir con conexión, el sync se reactiva.
+
+```
+Acta guardada localmente (isSynced = false)
+            ↓
+Conexión detectada + usuario autenticado
+            ↓
+Subir imagen a Storage → obtener image_id
+            ↓
+Crear documento en Database con image_id
+            ↓
+Si ambos éxitos → isSynced = true
+Si alguno falla → isSynced = false, reintentar luego
+```
+
+Este diseño no solo cumple el requerimiento offline; demuestra **pensamiento de arquitectura de software real**: tolerancia a fallos, idempotencia parcial y separación de responsabilidades.
+
+### 3.6 Manejo de fallos
 
 - Si la subida de una imagen falla, **se cancela solo esa acta** y se reintenta en el próximo ciclo.
 - Si el documento no se crea, la imagen puede quedar huérfana en Storage, pero el registro local sigue `isSynced = false` para reintentar.
@@ -170,7 +249,7 @@ Para cada acta con `isSynced == false`:
 
 ---
 
-## 4. Validación Local de Nitidez de Fotos
+## 4. Validación Local de Nitidez de Fotos y GPS
 
 ### 4.1 El reto tecnológico
 
@@ -210,6 +289,34 @@ El `ImageCaptureService` encapsula `image_picker` + `image_blur_detection` y es 
 ### 4.4 ¿Por qué este algoritmo para actas electorales?
 
 Las actas contienen texto denso: nombres de candidatos, números de votos, firmas y sellos. El texto genera bordes muy definidos. Una foto borrosa pierde esos bordes y la varianza del Laplaciano cae drásticamente, haciendo del algoritmo una herramienta ideal para este caso de uso.
+
+### 4.5 GPS infalible para el veedor con `geolocator`
+
+La ubicación geográfica es evidencia clave: demuestra que el veedor estuvo físicamente en el recinto cuando fotografió el acta. Usamos `geolocator` porque ofrece:
+
+- **Precisión configurable:** `LocationAccuracy.high` para coordenadas precisas.
+- **Manejo robusto de permisos:** Detecta si el GPS está desactivado, si el permiso fue denegado o denegado permanentemente, y lanza excepciones claras para la UI.
+- **Latitud y longitud confiables:** El `GpsService` encapsula toda la lógica y devuelve un `LocationEntity` puro que el `ActaBloc` consume sin dependencias de geolocator en la capa de presentación.
+
+```dart
+final position = await Geolocator.getCurrentPosition(
+  locationSettings: const LocationSettings(
+    accuracy: LocationAccuracy.high,
+  ),
+);
+
+return LocationEntity(
+  latitude: position.latitude,
+  longitude: position.longitude,
+);
+```
+
+**¿Por qué es infalible para el veedor?**
+- Si el GPS está apagado, la app informa inmediatamente y no deja guardar el acta sin coordenadas.
+- Si el permiso es denegado, se muestra un mensaje claro que guía al usuario a ajustes.
+- Si todo está correcto, se capturan las coordenadas exactas del recinto y se guardan en el modelo local, luego se sincronizan con Appwrite en el campo `latitud` / `longitud`.
+
+Esto convierte al veedor en un testigo georreferenciado: no solo dice que estuvo en el recinto, sino que la app registra dónde exactamente tomó la foto.
 
 ---
 
@@ -289,16 +396,32 @@ Nuestra app está orientada al **delegado de partido / veedor de mesa**, quien:
 ## 7. Checklist para la Sustentación
 
 - [ ] Explicar la división en capas de Clean Architecture.
-- [ ] Mostrar cómo BLoC evita pantallas en blanco (`AuthLoading`, `ActaLoading`).
-- [ ] Justificar Appwrite vs Supabase por rate limits y concurrencia.
-- [ ] Demostrar el guardado offline en Hive y la sincronización posterior.
-- [ ] Explicar la Varianza del Laplaciano y por qué rechaza fotos borrosas.
+- [ ] Mostrar cómo BLoC + `AuthWrapper` evitan pantallas en blanco (`AuthLoading`, `CircularProgressIndicator`).
+- [ ] Justificar Appwrite vs Supabase por rate limits y confiabilidad en vivo.
+- [ ] Demostrar el guardado offline en Hive con `isSynced = false` y sincronización posterior con `SyncService`.
+- [ ] Explicar cómo `connectivity_plus` y `AuthBloc` disparan el Background Sync sin bloquear la UI.
+- [ ] Explicar la Varianza del Laplaciano y por qué rechaza fotos borrosas antes de subir al Storage.
+- [ ] Mostrar la captura GPS con `geolocator` y su rol como evidencia georreferenciada.
 - [ ] Mostrar la validación de cédula con Módulo 10.
-- [ ] Demostrar la creación jerárquica de usuarios (Provincial → Recinto → Veedor).
+- [ ] Demostrar la creación jerárquica de usuarios (Provincial → Recinto → Veedor) con `dart_appwrite`.
 
 ---
 
-## 8. Dependencias Clave
+## 8. Frases de Cierre para la Defensa (30 segundos cada una)
+
+> **Sobre arquitectura:** "Nuestra app no depende de Appwrite; depende de contratos de repositorio. Si el docente pide cambiar el backend mañana, solo tocamos la capa de datos."
+
+> **Sobre UX:** "No existe la pantalla en blanco. Desde el arranque, `AuthWrapper` muestra un `CircularProgressIndicator` mientras restaura la sesión de Hive y luego redirige al rol correcto."
+
+> **Sobre Appwrite:** "Elegimos Appwrite porque en la defensa habrá picos de concurrencia. Supabase gratuito nos podría devolver `429 Too Many Requests` en vivo; Appwrite es más tolerante y nos da Server SDK con API Key."
+
+> **Sobre offline-first:** "El veedor guarda el acta localmente con `isSynced = false`. Cuando recupera red y está autenticado, `SyncService` sube la imagen, crea el documento y solo entonces marca `isSynced = true`. Nada se pierde si se cierra la app."
+
+> **Sobre sensores:** "Rechazamos fotos borrosas en el dispositivo con Varianza del Laplaciano antes de gastar ancho de banda, y capturamos GPS con `geolocator` para georreferenciar al veedor en el recinto."
+
+---
+
+## 9. Dependencias Clave
 
 ```yaml
 dependencies:
