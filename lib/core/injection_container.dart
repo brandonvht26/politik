@@ -5,6 +5,9 @@ import '../features/acta_escrutinio/domain/usecases/capture_photo.dart';
 import '../features/acta_escrutinio/domain/usecases/get_current_location.dart';
 import '../features/acta_escrutinio/domain/usecases/save_acta_local.dart';
 import '../features/acta_escrutinio/presentation/bloc/acta_bloc.dart';
+import 'services/appwrite_service.dart';
+import 'services/local_storage_service.dart';
+import 'services/sync_service.dart';
 import '../features/auth/data/repositories_impl/auth_repository_impl.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/domain/usecases/change_password.dart';
@@ -57,6 +60,9 @@ class InjectionContainer {
   late final ProvincialBloc provincialBloc;
   late final RecintoBloc recintoBloc;
 
+  // Sync service (Fase 5)
+  late final SyncService syncService;
+
   void init() {
     actaLocalDataSource = ActaLocalDataSourceImpl();
     veedorRepository = VeedorRepositoryImpl(
@@ -103,6 +109,12 @@ class InjectionContainer {
       getVeedores: getVeedoresPorRecinto,
       createVeedor: createVeedor,
       reassignVeedorMesa: reassignVeedorMesa,
+    );
+
+    syncService = SyncService(
+      appwriteService: AppwriteService(),
+      actasBox: LocalStorageService.actasLocalesBox,
+      authBloc: authBloc,
     );
   }
 

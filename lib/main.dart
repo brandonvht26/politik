@@ -25,6 +25,7 @@ void main() async {
   await AppwriteService().init();
 
   sl.init();
+  await sl.syncService.initialize();
   runApp(const MyApp());
 }
 
