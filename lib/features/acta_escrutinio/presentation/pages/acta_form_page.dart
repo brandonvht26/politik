@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../../domain/entities/jrv_entity.dart';
+import '../../domain/entities/voto_partido_local_entity.dart';
 import 'camera_page.dart';
 
 class ActaFormPage extends StatefulWidget {
-  final JrvEntity jrv;
-  final String dignidad;
+  final String tipo;
 
   const ActaFormPage({
     super.key,
-    required this.jrv,
-    required this.dignidad,
+    required this.tipo,
   });
 
   @override
@@ -20,12 +19,12 @@ class ActaFormPage extends StatefulWidget {
 class _ActaFormPageState extends State<ActaFormPage> {
   final _formKey = GlobalKey<FormState>();
 
-  static const _partidosMock = [
-    _Partido(id: 'p1', nombre: 'Partido A - Movimiento Nacional'),
-    _Partido(id: 'p2', nombre: 'Partido B - Alianza Popular'),
-    _Partido(id: 'p3', nombre: 'Partido C - Frente Democrático'),
-    _Partido(id: 'p4', nombre: 'Partido D - Unión Cívica'),
-    _Partido(id: 'p5', nombre: 'Partido E - Renovación'),
+  static const _organizaciones = [
+    'Partido A - Movimiento Nacional',
+    'Partido B - Alianza Popular',
+    'Partido C - Frente Democrático',
+    'Partido D - Unión Cívica',
+    'Partido E - Renovación',
   ];
 
   final Map<String, TextEditingController> _controllers = {};
@@ -38,8 +37,8 @@ class _ActaFormPageState extends State<ActaFormPage> {
   @override
   void initState() {
     super.initState();
-    for (final p in _partidosMock) {
-      _controllers[p.id] = TextEditingController();
+    for (final org in _organizaciones) {
+      _controllers[org] = TextEditingController();
     }
   }
 
@@ -71,8 +70,8 @@ class _ActaFormPageState extends State<ActaFormPage> {
       return false;
     }
     if (sumaTotal > total) {
-      setState(() =>
-          _errorMessage = 'La suma de votos ($sumaTotal) excede el total de sufragantes ($total).');
+      setState(() => _errorMessage =
+          'La suma de votos ($sumaTotal) excede el total de sufragantes ($total).');
       return false;
     }
     setState(() => _errorMessage = null);
@@ -83,18 +82,21 @@ class _ActaFormPageState extends State<ActaFormPage> {
     if (!_formKey.currentState!.validate()) return;
     if (!_validarVotos()) return;
 
-    final votosPartido = <String, int>{};
-    for (final p in _partidosMock) {
-      votosPartido[p.nombre] = _parseInt(_controllers[p.id]!.text);
-    }
+    final votosPartidos = _organizaciones
+        .map(
+          (org) => VotoPartidoLocalEntity(
+            nombreOrganizacion: org,
+            cantidadVotos: _parseInt(_controllers[org]!.text),
+          ),
+        )
+        .toList();
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => CameraPage(
-          jrv: widget.jrv,
-          dignidad: widget.dignidad,
-          votosPartido: votosPartido,
+          tipo: widget.tipo,
+          votosPartidos: votosPartidos,
           votosBlancos: _parseInt(_blancosCtrl.text),
           votosNulos: _parseInt(_nulosCtrl.text),
           totalSufragantes: _parseInt(_sufragantesCtrl.text),
@@ -106,12 +108,11 @@ class _ActaFormPageState extends State<ActaFormPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dignidadLabel =
-        widget.dignidad == 'alcalde' ? 'Alcalde' : 'Prefecto';
+    final tipoLabel = widget.tipo == 'alcalde' ? 'Alcalde' : 'Prefecto';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Acta $dignidadLabel - Mesa ${widget.jrv.numeroMesa}'),
+        title: Text('Acta $tipoLabel'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -125,14 +126,15 @@ class _ActaFormPageState extends State<ActaFormPage> {
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
-              ..._partidosMock.map((p) => Padding(
+              ..._organizaciones.map((org) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: TextFormField(
-                      controller: _controllers[p.id],
+                      controller: _controllers[org],
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.next,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
-                        labelText: p.nombre,
+                        labelText: org,
                         hintText: '0',
                       ),
                       validator: (v) {
@@ -150,32 +152,22 @@ class _ActaFormPageState extends State<ActaFormPage> {
                 controller: _blancosCtrl,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   labelText: 'Votos Blancos',
                   hintText: '0',
                 ),
-                validator: (v) {
-                  if (v != null && v.isNotEmpty && int.tryParse(v.trim()) == null) {
-                    return 'Ingrese un número válido';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _nulosCtrl,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   labelText: 'Votos Nulos',
                   hintText: '0',
                 ),
-                validator: (v) {
-                  if (v != null && v.isNotEmpty && int.tryParse(v.trim()) == null) {
-                    return 'Ingrese un número válido';
-                  }
-                  return null;
-                },
               ),
               const Divider(height: 32),
               Text('Total', style: theme.textTheme.titleMedium),
@@ -184,6 +176,7 @@ class _ActaFormPageState extends State<ActaFormPage> {
                 controller: _sufragantesCtrl,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   labelText: 'Total de Sufragantes',
                   hintText: '0',
@@ -227,7 +220,7 @@ class _ActaFormPageState extends State<ActaFormPage> {
               FilledButton.icon(
                 onPressed: _siguiente,
                 icon: const Icon(Icons.arrow_forward),
-                label: const Text('Siguiente'),
+                label: const Text('Siguiente: Capturar Foto'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -238,10 +231,4 @@ class _ActaFormPageState extends State<ActaFormPage> {
       ),
     );
   }
-}
-
-class _Partido {
-  final String id;
-  final String nombre;
-  const _Partido({required this.id, required this.nombre});
 }

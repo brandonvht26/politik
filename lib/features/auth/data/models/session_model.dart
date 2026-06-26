@@ -19,10 +19,15 @@ class SessionModel extends SessionEntity {
   @HiveField(2)
   String? get recintoId => super.recintoId;
 
+  @override
+  @HiveField(3)
+  String? get mesaId => super.mesaId;
+
   const SessionModel({
     required super.cedula,
     required super.rol,
     super.recintoId,
+    super.mesaId,
   });
 
   factory SessionModel.fromEntity(SessionEntity entity) {
@@ -30,6 +35,7 @@ class SessionModel extends SessionEntity {
       cedula: entity.cedula,
       rol: entity.rol,
       recintoId: entity.recintoId,
+      mesaId: entity.mesaId,
     );
   }
 
@@ -38,6 +44,7 @@ class SessionModel extends SessionEntity {
       cedula: cedula,
       rol: rol,
       recintoId: recintoId,
+      mesaId: mesaId,
     );
   }
 }

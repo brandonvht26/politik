@@ -43,8 +43,6 @@ class AuthRepositoryImpl implements AuthRepository {
       throw Exception(e.message ?? 'Error al iniciar sesión');
     }
 
-    final accountUser = await _appwrite.account.get();
-
     final profileList = await _appwrite.databases.listDocuments(
       databaseId: _appwrite.databaseId,
       collectionId: _appwrite.profilesCollectionId,
@@ -58,6 +56,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final profile = profileList.documents.first.data;
     final rol = profile['rol'] as String? ?? 'veedor';
     final recintoId = profile['recinto_id'] as String?;
+    final mesaId = profile['mesa_id'] as String?;
     final nombres = profile['nombres'] as String? ?? '';
     final apellidos = profile['apellidos'] as String? ?? '';
     final telefono = profile['telefono'] as String? ?? '';
@@ -77,6 +76,7 @@ class AuthRepositoryImpl implements AuthRepository {
       cedula: cedula,
       rol: rol,
       recintoId: recintoId,
+      mesaId: mesaId,
     );
 
     // Only persist the session when the user has already changed the default
@@ -107,6 +107,8 @@ class AuthRepositoryImpl implements AuthRepository {
         SessionModel(
           cedula: _currentUser!.id,
           rol: _currentUser!.rol,
+          recintoId: null,
+          mesaId: null,
         ),
       );
     }

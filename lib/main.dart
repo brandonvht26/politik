@@ -9,6 +9,8 @@ import 'core/theme/app_theme.dart';
 import 'features/acta_escrutinio/presentation/bloc/acta_bloc.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/auth_wrapper.dart';
+import 'features/dashboard/presentation/bloc/provincial_bloc.dart';
+import 'features/dashboard/presentation/bloc/recinto_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +37,8 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider<ActaBloc>.value(value: sl.actaBloc),
         BlocProvider<AuthBloc>.value(value: sl.authBloc),
+        BlocProvider<ProvincialBloc>.value(value: sl.provincialBloc),
+        BlocProvider<RecintoBloc>.value(value: sl.recintoBloc),
       ],
       child: MaterialApp(
         title: 'Veeduría Electoral',

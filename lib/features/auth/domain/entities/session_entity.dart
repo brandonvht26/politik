@@ -14,12 +14,16 @@ class SessionEntity extends Equatable {
   /// Polling place identifier when the role requires it.
   final String? recintoId;
 
+  /// Assigned voting table when the role is `'veedor'`.
+  final String? mesaId;
+
   const SessionEntity({
     required this.cedula,
     required this.rol,
     this.recintoId,
+    this.mesaId,
   });
 
   @override
-  List<Object?> get props => [cedula, rol, recintoId];
+  List<Object?> get props => [cedula, rol, recintoId, mesaId];
 }

@@ -20,19 +20,22 @@ class SessionModelAdapter extends TypeAdapter<SessionModel> {
       cedula: fields[0] as String,
       rol: fields[1] as String,
       recintoId: fields[2] as String?,
+      mesaId: fields[3] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SessionModel obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.cedula)
       ..writeByte(1)
       ..write(obj.rol)
       ..writeByte(2)
-      ..write(obj.recintoId);
+      ..write(obj.recintoId)
+      ..writeByte(3)
+      ..write(obj.mesaId);
   }
 
   @override

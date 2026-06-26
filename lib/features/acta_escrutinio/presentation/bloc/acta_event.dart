@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../../domain/entities/acta_escrutinio_entity.dart';
+import '../../domain/entities/voto_partido_local_entity.dart';
 
 abstract class ActaEvent extends Equatable {
   const ActaEvent();
@@ -9,11 +9,40 @@ abstract class ActaEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class SaveActaEvent extends ActaEvent {
-  final ActaEscrutinioEntity acta;
+/// Requests a camera capture and sharpness validation.
+class CapturePhotoRequested extends ActaEvent {}
 
-  const SaveActaEvent({required this.acta});
+/// Requests GPS acquisition, vote validation and local persistence.
+class SaveActaRequested extends ActaEvent {
+  final String recintoId;
+  final String mesaId;
+  final String tipo;
+  final List<VotoPartidoLocalEntity> votosPartidos;
+  final int votosBlancos;
+  final int votosNulos;
+  final int totalSufragantes;
+  final String imageLocalPath;
+
+  const SaveActaRequested({
+    required this.recintoId,
+    required this.mesaId,
+    required this.tipo,
+    required this.votosPartidos,
+    required this.votosBlancos,
+    required this.votosNulos,
+    required this.totalSufragantes,
+    required this.imageLocalPath,
+  });
 
   @override
-  List<Object?> get props => [acta];
+  List<Object?> get props => [
+        recintoId,
+        mesaId,
+        tipo,
+        votosPartidos,
+        votosBlancos,
+        votosNulos,
+        totalSufragantes,
+        imageLocalPath,
+      ];
 }

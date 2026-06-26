@@ -2,30 +2,24 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:image_blur_detection/image_blur_detection.dart';
-import 'package:image_picker/image_picker.dart';
 
-import '../../domain/entities/acta_escrutinio_entity.dart';
-import '../../domain/entities/jrv_entity.dart';
-import '../../domain/entities/votos_partido_entity.dart';
+import '../../../../core/services/local_storage_service.dart';
+import '../../domain/entities/voto_partido_local_entity.dart';
 import '../bloc/acta_bloc.dart';
 import '../bloc/acta_event.dart';
 import '../bloc/acta_state.dart';
 
 class CameraPage extends StatefulWidget {
-  final JrvEntity jrv;
-  final String dignidad;
-  final Map<String, int> votosPartido;
+  final String tipo;
+  final List<VotoPartidoLocalEntity> votosPartidos;
   final int votosBlancos;
   final int votosNulos;
   final int totalSufragantes;
 
   const CameraPage({
     super.key,
-    required this.jrv,
-    required this.dignidad,
-    required this.votosPartido,
+    required this.tipo,
+    required this.votosPartidos,
     required this.votosBlancos,
     required this.votosNulos,
     required this.totalSufragantes,
@@ -36,152 +30,20 @@ class CameraPage extends StatefulWidget {
 }
 
 class _CameraPageState extends State<CameraPage> {
-  final ImagePicker _picker = ImagePicker();
-  final ImageQualityValidator _validator = ImageQualityValidator(
-    config: QualityConfig.photoCapture,
-  );
-
-  File? _capturedImage;
-  bool _isProcessing = false;
-  bool _isSharp = false;
-  Position? _position;
-  String? _statusMessage;
-
-  Future<void> _tomarFoto() async {
-    setState(() {
-      _isProcessing = true;
-      _statusMessage = null;
-      _isSharp = false;
-      _capturedImage = null;
-      _position = null;
-    });
-
-    final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
-    if (photo == null) {
-      setState(() {
-        _isProcessing = false;
-        _statusMessage = 'No se tomó ninguna foto.';
-      });
-      return;
-    }
-
-    final bytes = await photo.readAsBytes();
-    final result = await _validator.validate(bytes);
-
-    if (!result.isValid) {
-      if (!mounted) return;
-      setState(() => _isProcessing = false);
-      _mostrarDialogoBorrosa();
-      return;
-    }
-
-    setState(() {
-      _capturedImage = File(photo.path);
-      _isSharp = true;
-      _isProcessing = false;
-    });
-
-    await _obtenerGPS();
-  }
-
-  void _mostrarDialogoBorrosa() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Foto borrosa'),
-        content: const Text(
-          'La foto es borrosa. Por favor, tómala de nuevo.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _tomarFoto();
-            },
-            child: const Text('Reintentar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _obtenerGPS() async {
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        if (!mounted) return;
-        setState(() {
-          _statusMessage =
-              'Permiso de ubicación denegado. No se puede registrar el GPS.';
-        });
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-      if (!mounted) return;
-      setState(() {
-        _position = position;
-        _statusMessage = null;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _statusMessage = 'Error al obtener GPS: $e';
-      });
-    }
-  }
-
-  void _guardarActa() {
-    final votosPartidoEntities = widget.votosPartido.entries
-        .map(
-          (e) => VotosPartidoEntity(
-            idOrganizacion: e.key,
-            nombreOrganizacion: e.key,
-            cantidadVotos: e.value,
-          ),
-        )
-        .toList();
-
-    final acta = ActaEscrutinioEntity(
-      id: '${widget.jrv.id}_${widget.dignidad}_${DateTime.now().millisecondsSinceEpoch}',
-      idJrv: widget.jrv.id,
-      dignidad: widget.dignidad,
-      votosPorPartido: votosPartidoEntities,
-      votosBlancos: widget.votosBlancos,
-      votosNulos: widget.votosNulos,
-      totalSufragantes: widget.totalSufragantes,
-      latitud: _position?.latitude,
-      longitud: _position?.longitude,
-      imagePath: _capturedImage?.path ?? '',
-      isSynced: false,
-    );
-
-    context.read<ActaBloc>().add(SaveActaEvent(acta: acta));
-  }
+  String? _capturedImagePath;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dignidadLabel =
-        widget.dignidad == 'alcalde' ? 'Alcalde' : 'Prefecto';
+    final tipoLabel = widget.tipo == 'alcalde' ? 'Alcalde' : 'Prefecto';
+    final session = LocalStorageService.sessionBox.get('current');
+    final recintoId = session?.recintoId ?? '';
+    final mesaId = session?.mesaId ?? '';
 
     return BlocConsumer<ActaBloc, ActaState>(
       listener: (context, state) {
-        if (state is ActaError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: theme.colorScheme.error,
-            ),
-          );
+        if (state is ActaPhotoCaptured) {
+          setState(() => _capturedImagePath = state.imagePath);
         } else if (state is ActaSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -190,6 +52,16 @@ class _CameraPageState extends State<CameraPage> {
             ),
           );
           Navigator.popUntil(context, (route) => route.isFirst);
+        } else if (state is ActaValidationError || state is ActaError) {
+          final message = state is ActaValidationError
+              ? state.message
+              : (state as ActaError).message;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: theme.colorScheme.error,
+            ),
+          );
         }
       },
       builder: (context, state) {
@@ -197,7 +69,7 @@ class _CameraPageState extends State<CameraPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text('Foto Acta $dignidadLabel'),
+            title: Text('Foto Acta $tipoLabel'),
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -217,17 +89,17 @@ class _CameraPageState extends State<CameraPage> {
                         Text('Resumen de Votos',
                             style: theme.textTheme.titleMedium),
                         const SizedBox(height: 8),
-                        ...widget.votosPartido.entries.map(
-                          (e) => Padding(
+                        ...widget.votosPartidos.map(
+                          (v) => Padding(
                             padding: const EdgeInsets.symmetric(vertical: 2),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
-                                  child: Text(e.key,
+                                  child: Text(v.nombreOrganizacion,
                                       style: theme.textTheme.bodyMedium),
                                 ),
-                                Text('${e.value}',
+                                Text('${v.cantidadVotos}',
                                     style: theme.textTheme.bodyMedium
                                         ?.copyWith(fontWeight: FontWeight.bold)),
                               ],
@@ -245,18 +117,18 @@ class _CameraPageState extends State<CameraPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                if (_isProcessing)
+                if (isLoading)
                   const Center(
                     child: Padding(
                       padding: EdgeInsets.all(32),
                       child: CircularProgressIndicator(),
                     ),
                   )
-                else if (_capturedImage != null && _isSharp) ...[
+                else if (_capturedImagePath != null) ...[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.file(
-                      _capturedImage!,
+                      File(_capturedImagePath!),
                       height: 300,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -274,20 +146,6 @@ class _CameraPageState extends State<CameraPage> {
                               ?.copyWith(color: const Color(0xFF16A34A))),
                     ],
                   ),
-                  if (_position != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.location_on, size: 18),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${_position!.latitude.toStringAsFixed(6)}, ${_position!.longitude.toStringAsFixed(6)}',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ],
                 ] else ...[
                   Container(
                     height: 200,
@@ -305,12 +163,14 @@ class _CameraPageState extends State<CameraPage> {
                         children: [
                           Icon(Icons.camera_alt_outlined,
                               size: 48,
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.4)),
                           const SizedBox(height: 8),
                           Text(
                             'Sin fotografía',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.4),
                             ),
                           ),
                         ],
@@ -318,21 +178,11 @@ class _CameraPageState extends State<CameraPage> {
                     ),
                   ),
                 ],
-                if (_statusMessage != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _statusMessage!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
                 const SizedBox(height: 24),
                 FilledButton.icon(
-                  onPressed: (_isProcessing || isLoading) ? null : _tomarFoto,
+                  onPressed: isLoading ? null : _tomarFoto,
                   icon: const Icon(Icons.camera_alt),
-                  label: Text(_capturedImage != null
+                  label: Text(_capturedImagePath != null
                       ? 'Volver a Tomar Foto'
                       : 'Tomar Fotografía'),
                   style: FilledButton.styleFrom(
@@ -341,11 +191,12 @@ class _CameraPageState extends State<CameraPage> {
                 ),
                 const SizedBox(height: 12),
                 FilledButton.icon(
-                  onPressed: (_capturedImage != null &&
-                          _isSharp &&
-                          !_isProcessing &&
-                          !isLoading)
-                      ? _guardarActa
+                  onPressed: (_capturedImagePath != null && !isLoading)
+                      ? () => _guardarActa(
+                            context,
+                            recintoId: recintoId,
+                            mesaId: mesaId,
+                          )
                       : null,
                   icon: isLoading
                       ? const SizedBox(
@@ -370,6 +221,31 @@ class _CameraPageState extends State<CameraPage> {
         );
       },
     );
+  }
+
+  void _tomarFoto() {
+    context.read<ActaBloc>().add(CapturePhotoRequested());
+  }
+
+  void _guardarActa(
+    BuildContext context, {
+    required String recintoId,
+    required String mesaId,
+  }) {
+    if (_capturedImagePath == null) return;
+
+    context.read<ActaBloc>().add(
+          SaveActaRequested(
+            recintoId: recintoId,
+            mesaId: mesaId,
+            tipo: widget.tipo,
+            votosPartidos: widget.votosPartidos,
+            votosBlancos: widget.votosBlancos,
+            votosNulos: widget.votosNulos,
+            totalSufragantes: widget.totalSufragantes,
+            imageLocalPath: _capturedImagePath!,
+          ),
+        );
   }
 
   Widget _resumenRow(String label, int value, ThemeData theme,

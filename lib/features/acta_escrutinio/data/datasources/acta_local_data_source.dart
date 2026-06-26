@@ -1,47 +1,51 @@
 import 'package:hive/hive.dart';
 
-import '../models/acta_escrutinio_model.dart';
+import '../../../../core/services/local_storage_service.dart';
+import '../models/acta_escrutinio_local_model.dart';
 
 abstract class ActaLocalDataSource {
-  Future<void> saveActa(ActaEscrutinioModel acta);
-  Future<List<ActaEscrutinioModel>> getPendingActas();
-  Future<void> updateActaSyncStatus(String id, bool status);
+  Future<void> saveActa(ActaEscrutinioLocalModel acta);
+  Future<List<ActaEscrutinioLocalModel>> getPendingActas();
+  Future<void> updateActaSyncStatus(String uuid, bool status);
 }
 
 class ActaLocalDataSourceImpl implements ActaLocalDataSource {
-  final Box<ActaEscrutinioModel> _actasBox;
+  final Box<ActaEscrutinioLocalModel> _actasBox;
 
-  ActaLocalDataSourceImpl({Box<ActaEscrutinioModel>? actasBox})
-      : _actasBox = actasBox ?? Hive.box<ActaEscrutinioModel>('actas');
+  ActaLocalDataSourceImpl({Box<ActaEscrutinioLocalModel>? actasBox})
+      : _actasBox = actasBox ?? LocalStorageService.actasLocalesBox;
 
   @override
-  Future<void> saveActa(ActaEscrutinioModel acta) async {
-    await _actasBox.put(acta.id, acta);
+  Future<void> saveActa(ActaEscrutinioLocalModel acta) async {
+    await _actasBox.put(acta.uuid, acta);
   }
 
   @override
-  Future<List<ActaEscrutinioModel>> getPendingActas() async {
+  Future<List<ActaEscrutinioLocalModel>> getPendingActas() async {
     return _actasBox.values.where((acta) => !acta.isSynced).toList();
   }
 
   @override
-  Future<void> updateActaSyncStatus(String id, bool status) async {
-    final acta = _actasBox.get(id);
+  Future<void> updateActaSyncStatus(String uuid, bool status) async {
+    final acta = _actasBox.get(uuid);
     if (acta != null) {
-      final updated = ActaEscrutinioModel(
-        id: acta.id,
-        idJrv: acta.idJrv,
-        dignidad: acta.dignidad,
-        votosPorPartido: acta.votosPorPartido,
+      final updated = ActaEscrutinioLocalModel(
+        uuid: acta.uuid,
+        recintoId: acta.recintoId,
+        mesaId: acta.mesaId,
+        tipo: acta.tipo,
+        votosPartidos: acta.votosPartidos,
         votosBlancos: acta.votosBlancos,
         votosNulos: acta.votosNulos,
         totalSufragantes: acta.totalSufragantes,
         latitud: acta.latitud,
         longitud: acta.longitud,
-        imagePath: acta.imagePath,
+        imageLocalPath: acta.imageLocalPath,
+        imageId: acta.imageId,
         isSynced: status,
+        createdAt: acta.createdAt,
       );
-      await _actasBox.put(id, updated);
+      await _actasBox.put(uuid, updated);
     }
   }
 }
