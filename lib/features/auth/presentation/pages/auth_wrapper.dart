@@ -4,9 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../acta_escrutinio/presentation/pages/mis_mesas_page.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_state.dart';
-import '../pages/change_password_page.dart';
-import '../pages/login_page.dart';
+import 'change_password_page.dart';
+import 'login_page.dart';
 
+/// Decides which auth-related screen the user should see based on the
+/// current [AuthState].
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -14,22 +16,25 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        if (state is AuthInitial || state is AuthUnauthenticated || state is AuthError) {
-          return const LoginPage();
-        } else if (state is AuthRequirePasswordChange) {
-          return const ChangePasswordPage();
-        } else if (state is AuthAuthenticated) {
-          final user = state.user;
-          if (user.rol == 'veedor') {
-            return const MisMesasPage();
-          } else {
-            return _CoordinadorPlaceholder(rol: user.rol);
-          }
-        } else if (state is AuthLoading) {
+        if (state is AuthLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
+
+        if (state is AuthRequiresPasswordChange) {
+          return const ForcePasswordChangePage();
+        }
+
+        if (state is AuthSuccess) {
+          final user = state.user;
+          if (user.rol == 'veedor') {
+            return const MisMesasPage();
+          }
+          return _CoordinadorPlaceholder(rol: user.rol);
+        }
+
+        // AuthInitial, AuthError or any other non-authenticated state.
         return const LoginPage();
       },
     );

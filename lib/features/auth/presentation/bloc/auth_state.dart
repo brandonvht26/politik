@@ -13,18 +13,20 @@ class AuthInitial extends AuthState {}
 
 class AuthLoading extends AuthState {}
 
-class AuthAuthenticated extends AuthState {
+/// Emitted after a successful login or password change.
+class AuthSuccess extends AuthState {
   final UserEntity user;
 
-  const AuthAuthenticated(this.user);
+  const AuthSuccess(this.user);
 
   @override
   List<Object?> get props => [user];
 }
 
-class AuthUnauthenticated extends AuthState {}
-
-class AuthRequirePasswordChange extends AuthState {}
+/// Emitted when the user logged in with the default password `Ecuador2026`.
+///
+/// The UI must redirect to [ForcePasswordChangePage].
+class AuthRequiresPasswordChange extends AuthState {}
 
 class AuthError extends AuthState {
   final String message;

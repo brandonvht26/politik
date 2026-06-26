@@ -5,14 +5,14 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
-class ChangePasswordPage extends StatefulWidget {
-  const ChangePasswordPage({super.key});
+class ForcePasswordChangePage extends StatefulWidget {
+  const ForcePasswordChangePage({super.key});
 
   @override
-  State<ChangePasswordPage> createState() => _ChangePasswordPageState();
+  State<ForcePasswordChangePage> createState() => _ForcePasswordChangePageState();
 }
 
-class _ChangePasswordPageState extends State<ChangePasswordPage> {
+class _ForcePasswordChangePageState extends State<ForcePasswordChangePage> {
   final _formKey = GlobalKey<FormState>();
   final _newPasswordCtrl = TextEditingController();
   final _confirmPasswordCtrl = TextEditingController();

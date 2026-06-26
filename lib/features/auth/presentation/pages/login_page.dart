@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/cedula_validator.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -83,16 +84,8 @@ class _LoginPageState extends State<LoginPage> {
                     counterText: '',
                   ),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'Ingrese su cédula';
-                    }
-                    if (v.trim().length != 10) {
-                      return 'La cédula debe tener 10 dígitos';
-                    }
-                    if (int.tryParse(v.trim()) == null) {
-                      return 'Ingrese solo números';
-                    }
-                    return null;
+                    final result = CedulaValidator.validate(v ?? '');
+                    return result.isValid ? null : result.message;
                   },
                 ),
                 const SizedBox(height: 16),

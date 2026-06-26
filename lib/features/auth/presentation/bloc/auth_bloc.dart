@@ -1,37 +1,75 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/services/local_storage_service.dart';
+import '../../../../core/utils/cedula_validator.dart';
+import '../../data/models/session_model.dart';
 import '../../domain/entities/user_entity.dart';
+import '../../domain/usecases/change_password.dart';
+import '../../domain/usecases/login_user.dart';
+import '../../domain/usecases/logout_user.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  AuthBloc() : super(AuthInitial()) {
+  final LoginUser _loginUser;
+  final ChangePassword _changePassword;
+  final LogoutUser _logoutUser;
+
+  AuthBloc({
+    required LoginUser loginUser,
+    required ChangePassword changePassword,
+    required LogoutUser logoutUser,
+  })  : _loginUser = loginUser,
+        _changePassword = changePassword,
+        _logoutUser = logoutUser,
+        super(AuthInitial()) {
+    on<AuthStarted>(_onStarted);
     on<LoginRequested>(_onLogin);
     on<ChangePasswordRequested>(_onChangePassword);
     on<LogoutRequested>(_onLogout);
+
+    // Check whether a session was already persisted in Hive.
+    add(AuthStarted());
+  }
+
+  Future<void> _onStarted(
+    AuthStarted event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+
+    final session = LocalStorageService.sessionBox.get('current');
+    if (session != null) {
+      final user = _sessionToUser(session);
+      emit(AuthSuccess(user));
+      return;
+    }
+
+    emit(AuthInitial());
   }
 
   Future<void> _onLogin(
     LoginRequested event,
     Emitter<AuthState> emit,
   ) async {
+    final validation = CedulaValidator.validate(event.cedula);
+    if (!validation.isValid) {
+      emit(AuthError(validation.message!));
+      return;
+    }
+
     emit(AuthLoading());
-    await Future.delayed(const Duration(seconds: 1));
 
     try {
+      final user = await _loginUser(
+        cedula: event.cedula.trim(),
+        password: event.password,
+      );
+
       if (event.password == 'Ecuador2026') {
-        emit(AuthRequirePasswordChange());
+        emit(AuthRequiresPasswordChange());
       } else {
-        final user = UserEntity(
-          id: event.cedula,
-          email: '${event.cedula}@politik.com',
-          nombres: 'Usuario',
-          apellidos: 'Veedor',
-          telefono: '0999999999',
-          rol: 'veedor',
-          requiresPasswordChange: false,
-        );
-        emit(AuthAuthenticated(user));
+        emit(AuthSuccess(user));
       }
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -43,19 +81,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    await Future.delayed(const Duration(seconds: 1));
 
     try {
-      final user = UserEntity(
-        id: '1234567890',
-        email: '1234567890@politik.com',
-        nombres: 'Usuario',
-        apellidos: 'Veedor',
-        telefono: '0999999999',
-        rol: 'veedor',
-        requiresPasswordChange: false,
-      );
-      emit(AuthAuthenticated(user));
+      final user = await _changePassword(newPassword: event.newPassword);
+      emit(AuthSuccess(user));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -65,6 +94,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthUnauthenticated());
+    emit(AuthLoading());
+
+    try {
+      await _logoutUser();
+    } catch (_) {
+      // Ignore logout failures; the UI will land back at the login screen.
+    }
+
+    emit(AuthInitial());
+  }
+
+  UserEntity _sessionToUser(SessionModel session) {
+    return UserEntity(
+      id: session.cedula,
+      email: '${session.cedula}@politik.com',
+      nombres: 'Usuario',
+      apellidos: '',
+      telefono: '',
+      rol: session.rol,
+      requiresPasswordChange: false,
+    );
   }
 }

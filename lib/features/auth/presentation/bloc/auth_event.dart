@@ -7,6 +7,9 @@ abstract class AuthEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+/// Event triggered when the app starts to check for a cached session.
+class AuthStarted extends AuthEvent {}
+
 class LoginRequested extends AuthEvent {
   final String cedula;
   final String password;
