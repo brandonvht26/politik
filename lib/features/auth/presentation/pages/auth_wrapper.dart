@@ -29,12 +29,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        if (state is AuthLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
+        // We don't intercept AuthLoading here because it destroys the LoginPage state.
+        // LoginPage handles AuthLoading by showing a spinner on its own button.
+        
         if (state is AuthRequiresPasswordChange) {
           return const ForcePasswordChangePage();
         }

@@ -1,4 +1,5 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart';
 import 'package:hive/hive.dart';
 
 import '../../../../core/services/appwrite_service.dart';
@@ -35,11 +36,21 @@ class AuthRepositoryImpl implements AuthRepository {
     // 1. Obtener el perfil de la base de datos para recuperar el correo_real
     // NOTA DE SEGURIDAD: Para que esto funcione antes de iniciar sesión, 
     // la colección 'profiles' en Appwrite DEBE tener permisos de read("any").
-    final profileList = await _appwrite.databases.listDocuments(
-      databaseId: _appwrite.databaseId,
-      collectionId: _appwrite.profilesCollectionId,
-      queries: [Query.equal('cedula', cedula)],
-    );
+    late final DocumentList profileList;
+    try {
+      profileList = await _appwrite.databases.listDocuments(
+        databaseId: _appwrite.databaseId,
+        collectionId: _appwrite.profilesCollectionId,
+        queries: [Query.equal('cedula', cedula)],
+      );
+    } on AppwriteException catch (e) {
+      if (e.code == 401) {
+        throw Exception('Permisos insuficientes. Configura read("any") en la colección profiles.');
+      } else if (e.code == 400 && e.message?.contains('Index') == true) {
+        throw Exception('Falta crear un índice tipo "key" para "cedula" en la colección profiles.');
+      }
+      throw Exception('Error al consultar perfil: ${e.message}');
+    }
 
     if (profileList.documents.isEmpty) {
       throw Exception('No se encontró el perfil asociado a la cédula $cedula');
@@ -55,7 +66,10 @@ class AuthRepositoryImpl implements AuthRepository {
         password: password,
       );
     } on AppwriteException catch (e) {
-      throw Exception(e.message ?? 'Error al iniciar sesión');
+      if (e.code == 401) {
+        throw Exception('Contraseña incorrecta. (Asegúrate de haber creado el usuario con la contraseña Ecuador2026)');
+      }
+      throw Exception('Error al iniciar sesión: ${e.message}');
     }
 
     final rol = profile['rol'] as String? ?? 'veedor';
