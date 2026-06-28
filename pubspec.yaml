@@ -93,3 +93,6 @@ flutter_icons:
   android: true
   ios: true
   image_path: "assets/icon/politik.png"
+
+dependency_overrides:
+  flutter_web_auth_2: ^5.0.3

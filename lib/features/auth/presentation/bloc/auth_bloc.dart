@@ -52,11 +52,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     LoginRequested event,
     Emitter<AuthState> emit,
   ) async {
-    final validation = CedulaValidator.validate(event.cedula);
-    if (!validation.isValid) {
-      emit(AuthError(validation.message!));
-      return;
-    }
 
     emit(AuthLoading());
 

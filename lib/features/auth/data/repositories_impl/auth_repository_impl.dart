@@ -32,17 +32,9 @@ class AuthRepositoryImpl implements AuthRepository {
     required String cedula,
     required String password,
   }) async {
-    final email = '$cedula@politik.com';
-
-    try {
-      await _appwrite.account.createEmailPasswordSession(
-        email: email,
-        password: password,
-      );
-    } on AppwriteException catch (e) {
-      throw Exception(e.message ?? 'Error al iniciar sesión');
-    }
-
+    // 1. Obtener el perfil de la base de datos para recuperar el correo_real
+    // NOTA DE SEGURIDAD: Para que esto funcione antes de iniciar sesión, 
+    // la colección 'profiles' en Appwrite DEBE tener permisos de read("any").
     final profileList = await _appwrite.databases.listDocuments(
       databaseId: _appwrite.databaseId,
       collectionId: _appwrite.profilesCollectionId,
@@ -54,6 +46,18 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     final profile = profileList.documents.first.data;
+    final email = profile['correo_real'] as String? ?? '$cedula@politik.com';
+
+    // 2. Iniciar sesión usando el correo real
+    try {
+      await _appwrite.account.createEmailPasswordSession(
+        email: email,
+        password: password,
+      );
+    } on AppwriteException catch (e) {
+      throw Exception(e.message ?? 'Error al iniciar sesión');
+    }
+
     final rol = profile['rol'] as String? ?? 'veedor';
     final recintoId = profile['recinto_id'] as String?;
     final mesaId = profile['mesa_id'] as String?;

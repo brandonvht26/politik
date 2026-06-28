@@ -21,6 +21,8 @@ class AppwriteService {
   String get actasCollectionId => dotenv.env['APPWRITE_ACTAS_COLLECTION_ID'] ?? '';
   String get profilesCollectionId => dotenv.env['APPWRITE_PROFILES_COLLECTION_ID'] ?? '';
   String get recintosCollectionId => dotenv.env['APPWRITE_RECINTOS_COLLECTION_ID'] ?? '';
+  String get organizacionesPoliticasCollectionId => dotenv.env['APPWRITE_ORGANIZACIONES_POLITICAS_COLLECTION_ID'] ?? '';
+  String get parroquiasCollectionId => dotenv.env['APPWRITE_PARROQUIAS_COLLECTION_ID'] ?? '';
   String get storageBucketId => dotenv.env['APPWRITE_STORAGE_BUCKET_ID'] ?? '';
   String get apiKey => dotenv.env['APPWRITE_API_KEY'] ?? '';
 

@@ -118,7 +118,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     try {
       await _appwrite.users.create(
         userId: cedula,
-        email: '$cedula@politik.com',
+        email: correoReal,
         password: 'Ecuador2026',
         name: nombreCompleto,
       );
@@ -161,7 +161,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     try {
       await _appwrite.users.create(
         userId: cedula,
-        email: '$cedula@politik.com',
+        email: correoReal,
         password: 'Ecuador2026',
         name: nombreCompleto,
       );
