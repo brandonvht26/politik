@@ -19,6 +19,38 @@ class _ForcePasswordChangePageState extends State<ForcePasswordChangePage> {
   bool _obscureNew = true;
   bool _obscureConfirm = true;
 
+  int _strength = 0;
+  String _strengthText = '';
+  Color _strengthColor = Colors.grey;
+
+  void _checkPasswordStrength(String password) {
+    int strength = 0;
+    if (password.length >= 8) strength++;
+    if (password.contains(RegExp(r'[A-Z]'))) strength++;
+    if (password.contains(RegExp(r'[a-z]'))) strength++;
+    if (password.contains(RegExp(r'[0-9!@#\$&*~]'))) strength++;
+
+    setState(() {
+      if (password.isEmpty) {
+        _strength = 0;
+        _strengthText = '';
+        _strengthColor = Colors.grey;
+      } else if (strength <= 2) {
+        _strength = 1;
+        _strengthText = 'Débil';
+        _strengthColor = Colors.red;
+      } else if (strength == 3) {
+        _strength = 2;
+        _strengthText = 'Media';
+        _strengthColor = Colors.orange;
+      } else {
+        _strength = 3;
+        _strengthText = 'Fuerte';
+        _strengthColor = Colors.green;
+      }
+    });
+  }
+
   @override
   void dispose() {
     _newPasswordCtrl.dispose();
@@ -71,9 +103,10 @@ class _ForcePasswordChangePageState extends State<ForcePasswordChangePage> {
                   controller: _newPasswordCtrl,
                   obscureText: _obscureNew,
                   textInputAction: TextInputAction.next,
+                  onChanged: _checkPasswordStrength,
                   decoration: InputDecoration(
                     labelText: 'Nueva Contraseña',
-                    hintText: 'Mínimo 6 caracteres',
+                    hintText: 'Mínimo 8 caracteres',
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -86,12 +119,52 @@ class _ForcePasswordChangePageState extends State<ForcePasswordChangePage> {
                     if (v == null || v.isEmpty) {
                       return 'Ingrese una contraseña';
                     }
-                    if (v.length < 6) {
-                      return 'Mínimo 6 caracteres';
+                    if (v.contains(' ')) {
+                      return 'La contraseña no debe contener espacios';
+                    }
+                    if (v.length < 8) {
+                      return 'Mínimo 8 caracteres';
+                    }
+                    if (!v.contains(RegExp(r'[A-Z]'))) {
+                      return 'Debe contener al menos una mayúscula';
+                    }
+                    if (!v.contains(RegExp(r'[a-z]'))) {
+                      return 'Debe contener al menos una minúscula';
+                    }
+                    if (!v.contains(RegExp(r'[0-9]')) && !v.contains(RegExp(r'[!@#\$&*~_]'))) {
+                      return 'Debe contener un número o carácter especial';
                     }
                     return null;
                   },
                 ),
+                if (_newPasswordCtrl.text.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: _strength / 3,
+                              backgroundColor: Colors.grey.shade300,
+                              color: _strengthColor,
+                              minHeight: 6,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _strengthText,
+                          style: TextStyle(
+                            color: _strengthColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _confirmPasswordCtrl,

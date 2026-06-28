@@ -26,6 +26,14 @@ Dado que Appwrite Auth gestiona la autenticación, usaremos esta colección para
   - `nombre` (String)
   - `num_mesas` (Integer)
 
+#### Colección: `organizaciones_politicas`
+Contiene los candidatos precargados (12 en total) tanto para Alcaldía como Prefectura.
+- **Atributos:**
+  - `nombre_partido` (String)
+  - `lista` (Integer o String)
+  - `candidato` (String)
+  - `dignidad` (String) -> 'alcalde' o 'prefecto'
+
 #### Colección: `actas`
 - **Permisos:** Document Security habilitado. Veedores no pueden ver actas de otros recintos.
 - **Atributos:**

@@ -85,12 +85,34 @@ class _RecintoDashboardPageState extends State<RecintoDashboardPage> {
                 ),
               );
             } else if (state is RecintoActionSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: theme.colorScheme.primary,
-                ),
-              );
+              if (state.message.contains('creado')) {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => AlertDialog(
+                    title: const Text('¡Cuenta de Veedor Creada!'),
+                    content: const Text(
+                      'Hemos enviado un correo de verificación automático al usuario. Por favor, indíquele lo siguiente:\n\n'
+                      'a. Que abra su bandeja de entrada (o carpeta de SPAM) y busque un correo de Appwrite / Politik.\n\n'
+                      'b. Que presione el botón azul \'Confirm email address\'.\n\n'
+                      'c. Que regrese a esta app e inicie sesión usando su Cédula y la contraseña temporal: Ecuador2026.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Entendido'),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: theme.colorScheme.primary,
+                  ),
+                );
+              }
             }
           },
           builder: (context, state) {

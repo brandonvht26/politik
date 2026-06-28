@@ -48,9 +48,9 @@ class ActaBloc extends Bloc<ActaEvent, ActaState> {
         event.votosBlancos +
         event.votosNulos;
 
-    if (sumaVotos > event.totalSufragantes) {
+    if (sumaVotos != event.totalSufragantes) {
       emit(ActaValidationError(
-        'La suma de votos ($sumaVotos) excede el total de sufragantes (${event.totalSufragantes}).',
+        'Inconsistencia numérica: La suma total de votos, blancos y nulos ($sumaVotos) debe coincidir exactamente con el Total de Sufragantes (${event.totalSufragantes}).',
       ));
       return;
     }

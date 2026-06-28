@@ -16,6 +16,10 @@ abstract class DashboardRepository {
 
   Future<List<UserProfileEntity>> getVeedoresPorRecinto(String recintoId);
 
+  Future<List<Map<String, dynamic>>> getActas();
+
+  Future<List<Map<String, dynamic>>> getOrganizacionesPoliticas();
+
   Future<void> createCoordinadorRecinto({
     required String cedula,
     required String nombres,

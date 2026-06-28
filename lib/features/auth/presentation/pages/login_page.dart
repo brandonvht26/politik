@@ -150,6 +150,35 @@ class _LoginPageState extends State<LoginPage> {
                     );
                   },
                 ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '¿Eres un usuario nuevo? Revisa tu correo electrónico para verificar tu cuenta e ingresa con la clave provisional asignada por tu coordinador',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

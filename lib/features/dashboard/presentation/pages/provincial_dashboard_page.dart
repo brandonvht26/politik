@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -60,12 +61,34 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                 ),
               );
             } else if (state is ProvincialActionSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: theme.colorScheme.primary,
-                ),
-              );
+              if (state.message.contains('creado')) {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => AlertDialog(
+                    title: const Text('¡Cuenta de Coordinador Creada!'),
+                    content: const Text(
+                      'Hemos enviado un correo de verificación automático al usuario. Por favor, indíquele lo siguiente:\n\n'
+                      'a. Que abra su bandeja de entrada (o carpeta de SPAM) y busque un correo de Appwrite / Politik.\n\n'
+                      'b. Que presione el botón azul \'Confirm email address\'.\n\n'
+                      'c. Que regrese a esta app e inicie sesión usando su Cédula y la contraseña temporal: Ecuador2026.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Entendido'),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: theme.colorScheme.primary,
+                  ),
+                );
+              }
             }
           },
           builder: (context, state) {
@@ -95,54 +118,90 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
               );
             }
 
-            if (state is ProvincialDataLoaded) {
-              return RefreshIndicator(
-                onRefresh: () async => _loadData(),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _SectionHeader(
-                        icon: Icons.place,
-                        title: 'Recintos',
-                        count: state.recintos.length,
+    if (state is ProvincialDataLoaded) {
+              return DefaultTabController(
+                length: 2,
+                child: Column(
+                  children: [
+                    const TabBar(
+                      tabs: [
+                        Tab(text: 'Gestión', icon: Icon(Icons.admin_panel_settings)),
+                        Tab(text: 'Resultados', icon: Icon(Icons.bar_chart)),
+                      ],
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          // Tab 1: Gestión (Recintos y Coordinadores)
+                          RefreshIndicator(
+                            onRefresh: () async => _loadData(),
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _SectionHeader(
+                                    icon: Icons.place,
+                                    title: 'Recintos',
+                                    count: state.recintos.length,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _RecintosList(recintos: state.recintos),
+                                  const SizedBox(height: 12),
+                                  OutlinedButton.icon(
+                                    onPressed: () => _showCreateRecintoDialog(context),
+                                    icon: const Icon(Icons.add_location_alt),
+                                    label: const Text('Nuevo Recinto'),
+                                  ),
+                                  const SizedBox(height: 32),
+                                  _SectionHeader(
+                                    icon: Icons.supervisor_account,
+                                    title: 'Coordinadores de Recinto',
+                                    count: state.coordinadores.length,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _CoordinadoresList(
+                                    coordinadores: state.coordinadores,
+                                    recintos: state.recintos,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  OutlinedButton.icon(
+                                    onPressed: () {
+                                      if (state.recintos.isEmpty) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: const Text(
+                                              'Debe crear al menos un recinto primero',
+                                            ),
+                                            backgroundColor: theme.colorScheme.error,
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      _showCreateCoordinadorDialog(context, state.recintos);
+                                    },
+                                    icon: const Icon(Icons.person_add),
+                                    label: const Text('Nuevo Coordinador'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          
+                          // Tab 2: Resultados Consolidados
+                          _ResultadosTab(
+                            actas: state.actas,
+                            organizacionesPoliticas: state.organizacionesPoliticas,
+                            onRefresh: () async => _loadData(),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      _RecintosList(recintos: state.recintos),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: () => _showCreateRecintoDialog(context),
-                        icon: const Icon(Icons.add_location_alt),
-                        label: const Text('Nuevo Recinto'),
-                      ),
-                      const SizedBox(height: 32),
-                      _SectionHeader(
-                        icon: Icons.supervisor_account,
-                        title: 'Coordinadores de Recinto',
-                        count: state.coordinadores.length,
-                      ),
-                      const SizedBox(height: 8),
-                      _CoordinadoresList(
-                        coordinadores: state.coordinadores,
-                        recintos: state.recintos,
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: () => _showCreateCoordinadorDialog(
-                          context,
-                          state.recintos,
-                        ),
-                        icon: const Icon(Icons.person_add),
-                        label: const Text('Nuevo Coordinador'),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }
-
             return const SizedBox.shrink();
           },
         ),
@@ -319,3 +378,199 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
+
+class _ResultadosTab extends StatelessWidget {
+  final List<Map<String, dynamic>> actas;
+  final List<Map<String, dynamic>> organizacionesPoliticas;
+  final Future<void> Function() onRefresh;
+
+  const _ResultadosTab({
+    required this.actas,
+    required this.organizacionesPoliticas,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Agregamos los votos
+    final votosAlcalde = <String, int>{};
+    final votosPrefecto = <String, int>{};
+
+    int totalBlancosAlcalde = 0;
+    int totalNulosAlcalde = 0;
+    int totalBlancosPrefecto = 0;
+    int totalNulosPrefecto = 0;
+
+    // Inicializar organizaciones
+    for (var org in organizacionesPoliticas) {
+      final nombre = org['nombre_partido'] as String;
+      final dignidad = org['dignidad'] as String;
+      if (dignidad == 'alcalde') {
+        votosAlcalde[nombre] = 0;
+      } else if (dignidad == 'prefecto') {
+        votosPrefecto[nombre] = 0;
+      }
+    }
+
+    // Sumar desde las actas
+    for (var acta in actas) {
+      final tipo = acta['tipo'] as String;
+      final votosStr = acta['votos_partidos'] as String;
+      final blancos = (acta['votos_blancos'] as num?)?.toInt() ?? 0;
+      final nulos = (acta['votos_nulos'] as num?)?.toInt() ?? 0;
+
+      if (tipo == 'alcalde') {
+        totalBlancosAlcalde += blancos;
+        totalNulosAlcalde += nulos;
+      } else {
+        totalBlancosPrefecto += blancos;
+        totalNulosPrefecto += nulos;
+      }
+
+      try {
+        final Map<String, dynamic> votosMap = jsonDecode(votosStr);
+        votosMap.forEach((key, value) {
+          final int cantidad = (value as num).toInt();
+          if (tipo == 'alcalde') {
+            votosAlcalde[key] = (votosAlcalde[key] ?? 0) + cantidad;
+          } else {
+            votosPrefecto[key] = (votosPrefecto[key] ?? 0) + cantidad;
+          }
+        });
+      } catch (e) {
+        debugPrint('Error parseando votos_partidos: $e');
+      }
+    }
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildChartSection(
+              context,
+              title: 'Alcaldía',
+              icon: Icons.account_balance,
+              votos: votosAlcalde,
+              blancos: totalBlancosAlcalde,
+              nulos: totalNulosAlcalde,
+            ),
+            const SizedBox(height: 32),
+            _buildChartSection(
+              context,
+              title: 'Prefectura',
+              icon: Icons.map,
+              votos: votosPrefecto,
+              blancos: totalBlancosPrefecto,
+              nulos: totalNulosPrefecto,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChartSection(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Map<String, int> votos,
+    required int blancos,
+    required int nulos,
+  }) {
+    final theme = Theme.of(context);
+    final totalVotosValidos = votos.values.fold(0, (sum, val) => sum + val);
+    final total = totalVotosValidos + blancos + nulos;
+
+    // Ordenar votos de mayor a menor
+    final sortedVotos = votos.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '$total sufragios',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            if (total == 0)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: Text('Aún no hay actas registradas.')),
+              )
+            else ...[
+              ...sortedVotos.map((entry) {
+                final percentage = total > 0 ? entry.value / total : 0.0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              entry.key,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            '${entry.value} votos (${(percentage * 100).toStringAsFixed(1)}%)',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: percentage,
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        color: theme.colorScheme.primary,
+                        minHeight: 8,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Votos Blancos: $blancos'),
+                  Text('Votos Nulos: $nulos'),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+

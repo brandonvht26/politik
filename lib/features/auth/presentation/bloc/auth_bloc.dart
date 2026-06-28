@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/services/local_storage_service.dart';
-import '../../../../core/utils/cedula_validator.dart';
 import '../../data/models/session_model.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/change_password.dart';

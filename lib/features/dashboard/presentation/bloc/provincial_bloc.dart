@@ -1,9 +1,14 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/entities/recinto_entity.dart';
+import '../../domain/entities/user_profile_entity.dart';
+
 import '../../domain/usecases/create_coordinador_recinto.dart';
 import '../../domain/usecases/create_recinto.dart';
 import '../../domain/usecases/get_coordinadores_recinto.dart';
 import '../../domain/usecases/get_recintos.dart';
+import '../../domain/usecases/get_actas.dart';
+import '../../domain/usecases/get_organizaciones_politicas.dart';
 import 'provincial_event.dart';
 import 'provincial_state.dart';
 
@@ -12,16 +17,22 @@ class ProvincialBloc extends Bloc<ProvincialEvent, ProvincialState> {
   final GetCoordinadoresRecinto _getCoordinadores;
   final CreateRecinto _createRecinto;
   final CreateCoordinadorRecinto _createCoordinador;
+  final GetActas _getActas;
+  final GetOrganizacionesPoliticas _getOrganizacionesPoliticas;
 
   ProvincialBloc({
     required GetRecintos getRecintos,
     required GetCoordinadoresRecinto getCoordinadores,
     required CreateRecinto createRecinto,
     required CreateCoordinadorRecinto createCoordinador,
+    required GetActas getActas,
+    required GetOrganizacionesPoliticas getOrganizacionesPoliticas,
   })  : _getRecintos = getRecintos,
         _getCoordinadores = getCoordinadores,
         _createRecinto = createRecinto,
         _createCoordinador = createCoordinador,
+        _getActas = getActas,
+        _getOrganizacionesPoliticas = getOrganizacionesPoliticas,
         super(ProvincialInitial()) {
     on<LoadProvincialData>(_onLoadData);
     on<CreateRecintoRequested>(_onCreateRecinto);
@@ -35,11 +46,18 @@ class ProvincialBloc extends Bloc<ProvincialEvent, ProvincialState> {
     emit(ProvincialLoading());
 
     try {
-      final recintos = await _getRecintos();
-      final coordinadores = await _getCoordinadores();
+      final results = await Future.wait([
+        _getRecintos(),
+        _getCoordinadores(),
+        _getActas(),
+        _getOrganizacionesPoliticas(),
+      ]);
+
       emit(ProvincialDataLoaded(
-        recintos: recintos,
-        coordinadores: coordinadores,
+        recintos: results[0] as List<RecintoEntity>,
+        coordinadores: results[1] as List<UserProfileEntity>,
+        actas: results[2] as List<Map<String, dynamic>>,
+        organizacionesPoliticas: results[3] as List<Map<String, dynamic>>,
       ));
     } catch (e) {
       emit(ProvincialError(e.toString()));

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/injection_container.dart';
 
 import '../../../acta_escrutinio/presentation/pages/mis_mesas_page.dart';
 import '../../../dashboard/presentation/pages/provincial_dashboard_page.dart';
@@ -8,9 +9,21 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_state.dart';
 import 'change_password_page.dart';
 import 'login_page.dart';
-
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      sl.deepLinkService.initialize(context);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

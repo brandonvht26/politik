@@ -1,5 +1,6 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
+import 'package:flutter/foundation.dart';
 import 'package:dart_appwrite/dart_appwrite.dart' as server;
 
 import '../../../../core/services/appwrite_service.dart';
@@ -103,6 +104,34 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> getActas() async {
+    try {
+      final response = await _appwrite.databases.listDocuments(
+        databaseId: _appwrite.databaseId,
+        collectionId: _appwrite.actasCollectionId,
+      );
+
+      return response.documents.map((doc) => doc.data).toList();
+    } on AppwriteException catch (e) {
+      throw Exception(e.message ?? 'Error al cargar actas');
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getOrganizacionesPoliticas() async {
+    try {
+      final response = await _appwrite.databases.listDocuments(
+        databaseId: _appwrite.databaseId,
+        collectionId: _appwrite.organizacionesPoliticasCollectionId,
+      );
+
+      return response.documents.map((doc) => doc.data).toList();
+    } on AppwriteException catch (e) {
+      throw Exception(e.message ?? 'Error al cargar organizaciones políticas');
+    }
+  }
+
+  @override
   Future<void> createCoordinadorRecinto({
     required String cedula,
     required String nombres,
@@ -137,6 +166,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
           'recinto_id': recintoId,
         },
       );
+
+      // Enviar correo de verificación en background usando sesión efímera
+      _sendVerificationEmail(correoReal, 'Ecuador2026');
     } on server.AppwriteException catch (e) {
       throw Exception(e.message ?? 'Error al crear el coordinador de recinto');
     } on AppwriteException catch (e) {
@@ -181,6 +213,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
           'mesa_id': mesaId,
         },
       );
+
+      // Enviar correo de verificación en background usando sesión efímera
+      _sendVerificationEmail(correoReal, 'Ecuador2026');
     } on server.AppwriteException catch (e) {
       throw Exception(e.message ?? 'Error al crear el veedor');
     } on AppwriteException catch (e) {
@@ -227,5 +262,33 @@ class DashboardRepositoryImpl implements DashboardRepository {
       recintoId: doc.data['recinto_id'] as String?,
       mesaId: doc.data['mesa_id'] as String?,
     );
+  }
+
+  /// Crea una sesión temporal del lado del cliente para disparar el correo de confirmación.
+  /// Hack necesario porque el Server SDK (users.create) no dispara correos de verificación automáticos.
+  Future<void> _sendVerificationEmail(String email, String password) async {
+    try {
+      final tempClient = Client()
+          .setEndpoint(_appwrite.endpoint)
+          .setProject(_appwrite.projectId)
+          .setSelfSigned(status: true);
+
+      final tempAccount = Account(tempClient);
+      
+      // 1. Iniciar sesión efímera
+      final session = await tempAccount.createEmailPasswordSession(
+        email: email, 
+        password: password,
+      );
+
+      // 2. Solicitar verificación (Dispara el correo de Appwrite al `correoReal`)
+      await tempAccount.createVerification(url: 'politik://verify');
+
+      // 3. Cerrar sesión
+      await tempAccount.deleteSession(sessionId: session.$id);
+    } catch (e) {
+      // Si falla, solo lo registramos, pero no bloqueamos la creación del usuario.
+      debugPrint('Advertencia: No se pudo enviar el correo de verificación a $email: $e');
+    }
   }
 }

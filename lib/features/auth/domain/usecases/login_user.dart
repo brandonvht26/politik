@@ -15,7 +15,7 @@ class LoginUser {
     // 1. Validación de Cédula Ecuatoriana (Módulo 10)
     final validation = CedulaValidator.validate(cedula);
     if (!validation.isValid) {
-      throw Exception(validation.errorMessage ?? 'Cédula inválida');
+      throw Exception(validation.message ?? 'Cédula inválida');
     }
 
     // 2. Ejecutar login a través del repositorio

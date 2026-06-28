@@ -26,7 +26,7 @@ Esta división garantiza que:
 
 - **El dominio no depende de frameworks.** Si mañana se cambia Appwrite por otro backend, solo se reescriben los repositorios de la capa de datos; las entidades, use cases y BLoC permanecen intactos.
 - **Cada feature es un slice vertical.** `auth`, `dashboard`, `acta_escrutinio` tienen su propio domain, data y presentation. Esto permite trabajar módulos de forma independiente y escalar el equipo.
-- **Las reglas de negocio están centralizadas.** Validaciones como `sumaVotos <= totalSufragantes` o la conversión de cédula a correo viven en use cases o repositorios, no dispersas en la UI.
+- **Las reglas de negocio están centralizadas.** Validaciones estrictas como `sumaVotos == totalSufragantes`, la política de contraseñas fuertes o el flujo de deep linking viven en use cases o repositorios, no dispersas en la UI.
 
 ### 1.2 BLoC como gestor de estado
 
@@ -145,6 +145,37 @@ La pantalla se queda cargando, el docente ve la app fallar en vivo y la nota se 
 3. La latencia es predecible y la respuesta ante errores es controlada desde el BLoC con estados de error visibles.
 
 > **Decisión de arquitectura:** Elegimos Appwrite no por moda, sino por **confiabilidad operacional** durante la demo. Un backend que se cae en vivo es un proyecto que no se defiende.
+
+---
+
+## 3. Seguridad, Verificación Nativa (Deep Linking) y UX Compensatoria
+
+### 3.1 Verificación Nativa sin Servidores Web (El "Truco" de la Sesión Efímera)
+
+La rúbrica exige que al crear una cuenta se envíe un correo de confirmación. Sin embargo, el Server SDK de Appwrite (`users.create`) no dispara correos automáticos. Desplegar un frontend web externo en Vercel solo para verificar cuentas rompe la cohesión de una app móvil nativa. 
+
+**La solución arquitectónica:**
+1. Al crear jerárquicamente un usuario (ej. Veedor), se asigna la contraseña `Ecuador2026` y su correo real.
+2. Inmediatamente el backend local crea un **cliente temporal** e inicia una sesión efímera usando esas credenciales.
+3. Se dispara `account.createVerification(url: 'politik://verify')`.
+4. Se destruye la sesión efímera.
+
+### 3.2 Deep Linking (`app_links`)
+El enlace del correo llega con un esquema custom (`politik://verify`). 
+- El OS de Android intercepta el link y abre nuestra app automáticamente.
+- El `DeepLinkService` global intercepta el `userId` y `secret` de la URL, y llama a `account.updateVerification` silenciosamente, confirmando la cuenta y mostrando un `SnackBar` verde. **Todo sucede sin salir del ecosistema Flutter.**
+
+### 3.3 Estrategia de Compensación Visual (Limitación del Tier Gratuito)
+Appwrite Cloud (plan gratuito) no permite editar la plantilla del correo de verificación, enviándolo siempre en inglés (*"Follow this link..."*). Para que esto no afecte la UX del usuario, diseñamos una **Estrategia de Compensación Visual**:
+- **Alerta Modal Inevitable:** Cuando un coordinador crea un usuario, no lanzamos un simple SnackBar fugaz. Levantamos un `AlertDialog` nativo que le indica textualmente al coordinador que advierta a su usuario sobre buscar un correo en inglés, presionar el botón y usar la clave `Ecuador2026`.
+- **Banner InfoCard:** En la pantalla de login, inyectamos una tarjeta informativa fija para guiar a los usuarios nuevos.
+Con esto, paramos el golpe de la limitación del backend directamente en el frontend.
+
+### 3.4 Políticas de Contraseña y Feedback en Tiempo Real
+Durante el "Forzar Cambio de Contraseña", aplicamos seguridad estricta mediante Expresiones Regulares:
+- Mínimo 8 caracteres, cero espacios.
+- Uso obligatorio de mayúsculas, minúsculas, y al menos un número o carácter especial.
+- Se implementó un medidor de fortaleza de contraseña interactivo (`Débil` / `Media` / `Fuerte`) que reacciona en tiempo real, elevando el nivel "Premium" de la UI.
 
 ---
 
@@ -381,7 +412,7 @@ Nuestra app está orientada al **delegado de partido / veedor de mesa**, quien:
 │                                                                     │
 │  FLUJO DEL VEEDOR:                                                  │
 │  1. Ingresa votos (5 orgs + blancos + nulos)                        │
-│  2. Valida suma ≤ sufragantes                                       │
+│  2. Valida suma matemática estricta (== sufragantes)                │
 │  3. Toma foto → valida nitidez (Varianza del Laplaciano)            │
 │  4. Captura GPS                                                     │
 │  5. Guarda acta en Hive con isSynced = false                        │
@@ -403,7 +434,10 @@ Nuestra app está orientada al **delegado de partido / veedor de mesa**, quien:
 - [ ] Explicar la Varianza del Laplaciano y por qué rechaza fotos borrosas antes de subir al Storage.
 - [ ] Mostrar la captura GPS con `geolocator` y su rol como evidencia georreferenciada.
 - [ ] Mostrar la validación de cédula con Módulo 10.
-- [ ] Demostrar la creación jerárquica de usuarios (Provincial → Recinto → Veedor) con `dart_appwrite`.
+- [ ] Demostrar la creación jerárquica de usuarios (Provincial → Recinto → Veedor) con el hack de sesión efímera para enviar correos de verificación nativos.
+- [ ] Demostrar el funcionamiento del Deep Linking abriendo la app desde un enlace.
+- [ ] Explicar la Estrategia de Compensación Visual (Alertas y Banners) ante las limitaciones del Free Tier de Appwrite.
+- [ ] Mostrar el validador estricto de contraseñas y el medidor de fortaleza visual.
 
 ---
 

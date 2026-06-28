@@ -6,6 +6,7 @@ import '../features/acta_escrutinio/domain/usecases/get_current_location.dart';
 import '../features/acta_escrutinio/domain/usecases/save_acta_local.dart';
 import '../features/acta_escrutinio/presentation/bloc/acta_bloc.dart';
 import 'services/appwrite_service.dart';
+import 'services/deep_link_service.dart';
 import 'services/local_storage_service.dart';
 import 'services/sync_service.dart';
 import '../features/auth/data/repositories_impl/auth_repository_impl.dart';
@@ -24,6 +25,8 @@ import '../features/dashboard/domain/usecases/get_recinto.dart';
 import '../features/dashboard/domain/usecases/get_recintos.dart';
 import '../features/dashboard/domain/usecases/get_veedores_por_recinto.dart';
 import '../features/dashboard/domain/usecases/reassign_veedor_mesa.dart';
+import '../features/dashboard/domain/usecases/get_actas.dart';
+import '../features/dashboard/domain/usecases/get_organizaciones_politicas.dart';
 import '../features/dashboard/presentation/bloc/provincial_bloc.dart';
 import '../features/dashboard/presentation/bloc/recinto_bloc.dart';
 
@@ -57,11 +60,14 @@ class InjectionContainer {
   late final GetVeedoresPorRecinto getVeedoresPorRecinto;
   late final CreateVeedor createVeedor;
   late final ReassignVeedorMesa reassignVeedorMesa;
+  late final GetActas getActas;
+  late final GetOrganizacionesPoliticas getOrganizacionesPoliticas;
   late final ProvincialBloc provincialBloc;
   late final RecintoBloc recintoBloc;
 
   // Sync service (Fase 5)
   late final SyncService syncService;
+  late final DeepLinkService deepLinkService;
 
   void init() {
     actaLocalDataSource = ActaLocalDataSourceImpl();
@@ -96,12 +102,16 @@ class InjectionContainer {
     getVeedoresPorRecinto = GetVeedoresPorRecinto(dashboardRepository);
     createVeedor = CreateVeedor(dashboardRepository);
     reassignVeedorMesa = ReassignVeedorMesa(dashboardRepository);
+    getActas = GetActas(dashboardRepository);
+    getOrganizacionesPoliticas = GetOrganizacionesPoliticas(dashboardRepository);
 
     provincialBloc = ProvincialBloc(
       getRecintos: getRecintos,
       getCoordinadores: getCoordinadoresRecinto,
       createRecinto: createRecinto,
       createCoordinador: createCoordinadorRecinto,
+      getActas: getActas,
+      getOrganizacionesPoliticas: getOrganizacionesPoliticas,
     );
 
     recintoBloc = RecintoBloc(
@@ -116,6 +126,8 @@ class InjectionContainer {
       actasBox: LocalStorageService.actasLocalesBox,
       authBloc: authBloc,
     );
+
+    deepLinkService = DeepLinkService(AppwriteService());
   }
 
   void dispose() {

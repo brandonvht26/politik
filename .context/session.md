@@ -141,3 +141,29 @@ flutter test          # All tests passed
 - La validación local de fotos borrosas evita subir basura al Storage y asegura evidencia electoral útil.
 
 > **Ciclo de desarrollo concluido.** El proyecto está listo para compilación, pruebas en dispositivo y defensa académica.
+
+---
+
+## Sesión: Refinamiento de Seguridad, Deep Linking y UX (Completada)
+**Fecha:** 2026-06-27
+**Herramienta:** Antigravity IDE
+
+### Resumen ejecutivo
+Se blindó la seguridad y la experiencia de usuario (UX) al implementar un sistema nativo de verificación de correos mediante Deep Linking (App Links) y sesiones efímeras temporales. Se introdujo una política de contraseñas fuertes con validación visual en tiempo real. Finalmente, se refinó la exactitud de los cálculos electorales de acuerdo con la rúbrica oficial.
+
+### Objetivos logrados:
+1. **Deep Linking & Verificación de Cuenta sin Vercel:**
+   - Se configuró el `AndroidManifest.xml` para escuchar el esquema `politik://verify`.
+   - Se inyectó un `DeepLinkService` global para interceptar el link y verificar la cuenta en background usando `updateVerification`.
+   - Hack implementado: Al usar `users.create` con el Server SDK, Appwrite no dispara correos automáticos. Para forzarlo, el backend local inicia una sesión efímera usando las credenciales recién creadas (Cédula + `Ecuador2026`), dispara `createVerification` y elimina la sesión.
+
+2. **Políticas Estrictas de Seguridad:**
+   - En `ForcePasswordChangePage` se exige: 8 caracteres, al menos una mayúscula, una minúscula, y un número o símbolo. Cero espacios.
+   - Implementación de un medidor visual de fortaleza de la contraseña en tiempo real.
+
+3. **Validación Matemática Exacta:**
+   - Ajuste en `ActaBloc`: La suma de votos de organizaciones + blancos + nulos ahora debe coincidir **exactamente** (`==`) con el `totalSufragantes`, tal cual estipula la rúbrica oficial ("estos datos deben coincidir").
+
+4. **Estrategia de Compensación Visual (Limitaciones de Tier Gratuito):**
+   - Dado que Appwrite Cloud gratuito prohíbe editar la plantilla del correo, se interceptaron los `SnackBar` en los Dashboards de Recinto/Provincial al crear usuarios, cambiándolos por un `AlertDialog` inevitable que indica textualmente al creador advertir al usuario sobre el correo en inglés y la clave `Ecuador2026`.
+   - Se agregó una `InfoCard` elegante en el `LoginPage` para guiar a los usuarios nuevos.
