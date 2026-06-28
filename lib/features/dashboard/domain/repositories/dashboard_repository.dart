@@ -20,6 +20,8 @@ abstract class DashboardRepository {
 
   Future<List<Map<String, dynamic>>> getOrganizacionesPoliticas();
 
+  Future<List<Map<String, dynamic>>> getParroquias();
+
   Future<void> createCoordinadorRecinto({
     required String cedula,
     required String nombres,

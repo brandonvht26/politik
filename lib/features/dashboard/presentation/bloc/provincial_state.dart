@@ -19,16 +19,18 @@ class ProvincialDataLoaded extends ProvincialState {
   final List<UserProfileEntity> coordinadores;
   final List<Map<String, dynamic>> actas;
   final List<Map<String, dynamic>> organizacionesPoliticas;
+  final List<Map<String, dynamic>> parroquias;
 
   const ProvincialDataLoaded({
     required this.recintos,
     required this.coordinadores,
     required this.actas,
     required this.organizacionesPoliticas,
+    required this.parroquias,
   });
 
   @override
-  List<Object?> get props => [recintos, coordinadores, actas, organizacionesPoliticas];
+  List<Object?> get props => [recintos, coordinadores, actas, organizacionesPoliticas, parroquias];
 }
 
 class ProvincialActionSuccess extends ProvincialState {

@@ -27,6 +27,7 @@ import '../features/dashboard/domain/usecases/get_veedores_por_recinto.dart';
 import '../features/dashboard/domain/usecases/reassign_veedor_mesa.dart';
 import '../features/dashboard/domain/usecases/get_actas.dart';
 import '../features/dashboard/domain/usecases/get_organizaciones_politicas.dart';
+import '../features/dashboard/domain/usecases/get_parroquias.dart';
 import '../features/dashboard/presentation/bloc/provincial_bloc.dart';
 import '../features/dashboard/presentation/bloc/recinto_bloc.dart';
 
@@ -62,6 +63,7 @@ class InjectionContainer {
   late final ReassignVeedorMesa reassignVeedorMesa;
   late final GetActas getActas;
   late final GetOrganizacionesPoliticas getOrganizacionesPoliticas;
+  late final GetParroquias getParroquias;
   late final ProvincialBloc provincialBloc;
   late final RecintoBloc recintoBloc;
 
@@ -104,6 +106,7 @@ class InjectionContainer {
     reassignVeedorMesa = ReassignVeedorMesa(dashboardRepository);
     getActas = GetActas(dashboardRepository);
     getOrganizacionesPoliticas = GetOrganizacionesPoliticas(dashboardRepository);
+    getParroquias = GetParroquias(dashboardRepository);
 
     provincialBloc = ProvincialBloc(
       getRecintos: getRecintos,
@@ -112,6 +115,7 @@ class InjectionContainer {
       createCoordinador: createCoordinadorRecinto,
       getActas: getActas,
       getOrganizacionesPoliticas: getOrganizacionesPoliticas,
+      getParroquias: getParroquias,
     );
 
     recintoBloc = RecintoBloc(

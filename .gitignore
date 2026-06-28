@@ -46,3 +46,6 @@ app.*.map.json
 
 # Variables de entorno
 .env
+
+# Dir
+scripts

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/recinto_entity.dart';
 import '../bloc/provincial_bloc.dart';
 import '../bloc/provincial_event.dart';
+import '../bloc/provincial_state.dart';
 
 class CreateRecintoDialog extends StatefulWidget {
   const CreateRecintoDialog({super.key});
@@ -15,15 +16,14 @@ class CreateRecintoDialog extends StatefulWidget {
 
 class _CreateRecintoDialogState extends State<CreateRecintoDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _cantonCtrl = TextEditingController();
-  final _parroquiaCtrl = TextEditingController();
+  final _cantonCtrl = TextEditingController(text: 'Quito'); // Default value based on DB
+  String? _selectedParroquia;
   final _nombreCtrl = TextEditingController();
   final _numMesasCtrl = TextEditingController();
 
   @override
   void dispose() {
     _cantonCtrl.dispose();
-    _parroquiaCtrl.dispose();
     _nombreCtrl.dispose();
     _numMesasCtrl.dispose();
     super.dispose();
@@ -35,7 +35,7 @@ class _CreateRecintoDialogState extends State<CreateRecintoDialog> {
     final recinto = RecintoEntity(
       id: '',
       canton: _cantonCtrl.text.trim(),
-      parroquia: _parroquiaCtrl.text.trim(),
+      parroquia: _selectedParroquia!,
       nombre: _nombreCtrl.text.trim(),
       numMesas: int.parse(_numMesasCtrl.text.trim()),
     );
@@ -47,6 +47,11 @@ class _CreateRecintoDialogState extends State<CreateRecintoDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final state = context.read<ProvincialBloc>().state;
+    List<Map<String, dynamic>> parroquias = [];
+    if (state is ProvincialDataLoaded) {
+      parroquias = state.parroquias;
+    }
 
     return AlertDialog(
       title: const Text('Nuevo Recinto'),
@@ -70,16 +75,26 @@ class _CreateRecintoDialogState extends State<CreateRecintoDialog> {
                       v == null || v.trim().isEmpty ? 'Ingrese el cantón' : null,
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
-                  controller: _parroquiaCtrl,
-                  textInputAction: TextInputAction.next,
-                  textCapitalization: TextCapitalization.sentences,
+                DropdownButtonFormField<String>(
+                  value: _selectedParroquia,
                   decoration: const InputDecoration(
                     labelText: 'Parroquia',
                     prefixIcon: Icon(Icons.map),
                   ),
+                  items: parroquias.map((p) {
+                    final nombre = p['nombre'] as String;
+                    return DropdownMenuItem(
+                      value: nombre,
+                      child: Text(nombre),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedParroquia = val;
+                    });
+                  },
                   validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Ingrese la parroquia' : null,
+                      v == null || v.isEmpty ? 'Seleccione la parroquia' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(

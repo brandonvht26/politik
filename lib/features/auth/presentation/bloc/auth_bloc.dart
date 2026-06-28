@@ -60,7 +60,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
       );
 
-      if (event.password == 'Ecuador2026') {
+      if (user.requiresPasswordChange) {
         emit(AuthRequiresPasswordChange());
       } else {
         emit(AuthSuccess(user));

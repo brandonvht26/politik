@@ -132,6 +132,19 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> getParroquias() async {
+    try {
+      final response = await _appwrite.databases.listDocuments(
+        databaseId: _appwrite.databaseId,
+        collectionId: _appwrite.parroquiasCollectionId,
+      );
+      return response.documents.map((doc) => doc.data).toList();
+    } on AppwriteException catch (e) {
+      throw Exception(e.message ?? 'Error al cargar parroquias');
+    }
+  }
+
+  @override
   Future<void> createCoordinadorRecinto({
     required String cedula,
     required String nombres,

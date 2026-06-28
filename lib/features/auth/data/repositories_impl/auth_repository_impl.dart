@@ -79,6 +79,8 @@ class AuthRepositoryImpl implements AuthRepository {
     final apellidos = profile['apellidos'] as String? ?? '';
     final telefono = profile['telefono'] as String? ?? '';
 
+    final bool requiresPasswordChange = profile['requires_password_change'] as bool? ?? (password == 'Ecuador2026');
+
     final user = UserEntity(
       id: cedula,
       email: email,
@@ -86,7 +88,7 @@ class AuthRepositoryImpl implements AuthRepository {
       apellidos: apellidos,
       telefono: telefono,
       rol: rol,
-      requiresPasswordChange: password == 'Ecuador2026',
+      requiresPasswordChange: requiresPasswordChange,
     );
 
     _currentUser = user;
@@ -110,9 +112,31 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserEntity> changePassword({required String newPassword}) async {
     try {
-      await _appwrite.account.updatePassword(password: newPassword);
+      await _appwrite.account.updatePassword(
+        password: newPassword,
+        oldPassword: 'Ecuador2026', // Requerido por Appwrite por seguridad
+      );
+
+      // Actualizar el estado en la base de datos
+      if (_currentUser != null) {
+        final profileList = await _appwrite.databases.listDocuments(
+          databaseId: _appwrite.databaseId,
+          collectionId: _appwrite.profilesCollectionId,
+          queries: [Query.equal('cedula', _currentUser!.id)],
+        );
+
+        if (profileList.documents.isNotEmpty) {
+          final docId = profileList.documents.first.$id;
+          await _appwrite.databases.updateDocument(
+            databaseId: _appwrite.databaseId,
+            collectionId: _appwrite.profilesCollectionId,
+            documentId: docId,
+            data: {'requires_password_change': false},
+          );
+        }
+      }
     } on AppwriteException catch (e) {
-      throw Exception(e.message ?? 'Error al cambiar la contraseña');
+      throw Exception('Error al cambiar la contraseña: ${e.message}');
     }
 
     // Persist the session now that the default password has been changed.
