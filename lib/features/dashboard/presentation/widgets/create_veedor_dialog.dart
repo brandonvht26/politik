@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/utils/cedula_validator.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../bloc/recinto_bloc.dart';
 import '../bloc/recinto_event.dart';
 
@@ -61,7 +62,13 @@ class _CreateVeedorDialogState extends State<CreateVeedorDialog> {
     final theme = Theme.of(context);
 
     return AlertDialog(
-      title: const Text('Nuevo Veedor de Mesa'),
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.accent, width: 2),
+      ),
+      elevation: 20,
+      title: const Text('Nuevo Veedor de Mesa', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
       content: SizedBox(
         width: double.maxFinite,
         child: SingleChildScrollView(
@@ -90,6 +97,9 @@ class _CreateVeedorDialogState extends State<CreateVeedorDialog> {
                   controller: _nombresCtrl,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$')),
+                  ],
                   decoration: const InputDecoration(
                     labelText: 'Nombres',
                     prefixIcon: Icon(Icons.person),
@@ -102,6 +112,9 @@ class _CreateVeedorDialogState extends State<CreateVeedorDialog> {
                   controller: _apellidosCtrl,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$')),
+                  ],
                   decoration: const InputDecoration(
                     labelText: 'Apellidos',
                     prefixIcon: Icon(Icons.person_outline),

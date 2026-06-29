@@ -14,4 +14,17 @@ class AppColors {
   
   static const Color error = Color(0xFFDC2626); // Rojo para errores
   static const Color success = Color(0xFF16A34A); // Verde para éxito (ej. subida correcta)
+
+  // Gradients for UI upgrade
+  static const LinearGradient metallicGradient = LinearGradient(
+    colors: [Color(0xFF0D3261), Color(0xFF1F61B5), Color(0xFF0D3261)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient goldGradient = LinearGradient(
+    colors: [Color(0xFFF9A825), Color(0xFFFFD54F), Color(0xFFF9A825)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 }

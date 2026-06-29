@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/services/local_storage_service.dart';
+import '../../../../core/presentation/widgets/metallic_card.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import 'acta_form_page.dart';
@@ -22,6 +24,11 @@ class MisMesasPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mis Mesas'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.metallicGradient,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -36,26 +43,27 @@ class MisMesasPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              MetallicCard(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Mesa N°$mesaId',
-                        style: theme.textTheme.headlineSmall,
+                      Row(
+                        children: [
+                          const Icon(Icons.table_bar_rounded, size: 28, color: AppColors.accent),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Mesa N°$mesaId',
+                            style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Recinto: $recintoId',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.6),
+                              color: Colors.white70,
                             ),
                       ),
                     ],
@@ -71,18 +79,40 @@ class MisMesasPage extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () => _navegarActa(context, 'alcalde'),
-                      icon: const Icon(Icons.how_to_vote),
-                      label: const Text('Acta Alcalde'),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: AppColors.metallicGradient,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.accent, width: 1.5),
+                      ),
+                      child: FilledButton.icon(
+                        onPressed: () => _navegarActa(context, 'alcalde'),
+                        icon: const Icon(Icons.how_to_vote, color: Colors.white),
+                        label: const Text('Acta Alcalde', style: TextStyle(color: Colors.white)),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: FilledButton.tonalIcon(
-                      onPressed: () => _navegarActa(context, 'prefecto'),
-                      icon: const Icon(Icons.how_to_vote_outlined),
-                      label: const Text('Acta Prefecto'),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: AppColors.metallicGradient,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.accent, width: 1.5),
+                      ),
+                      child: FilledButton.icon(
+                        onPressed: () => _navegarActa(context, 'prefecto'),
+                        icon: const Icon(Icons.how_to_vote_outlined, color: Colors.white),
+                        label: const Text('Acta Prefecto', style: TextStyle(color: Colors.white)),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                        ),
+                      ),
                     ),
                   ),
                 ],

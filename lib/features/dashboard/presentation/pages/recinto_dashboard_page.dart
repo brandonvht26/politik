@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/presentation/widgets/metallic_card.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/local_storage_service.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -66,6 +68,11 @@ class _RecintoDashboardPageState extends State<RecintoDashboardPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Coordinación de Recinto'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.metallicGradient,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -154,7 +161,7 @@ class _RecintoDashboardPageState extends State<RecintoDashboardPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Card(
+                      MetallicCard(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
@@ -162,28 +169,27 @@ class _RecintoDashboardPageState extends State<RecintoDashboardPage> {
                             children: [
                               Text(
                                 recinto.nombre,
-                                style: theme.textTheme.headlineSmall,
+                                style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '${recinto.canton} - ${recinto.parroquia}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.7),
+                                      color: Colors.white70,
                                     ),
                               ),
                               const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  Icon(
-                                    Icons.table_bar,
+                                  const Icon(
+                                    Icons.table_bar_rounded,
                                     size: 18,
-                                    color: theme.colorScheme.primary,
+                                    color: AppColors.accent,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(
                                     '${recinto.numMesas} mesas (JRVs)',
-                                    style: theme.textTheme.titleMedium,
+                                    style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
                                   ),
                                 ],
                               ),
@@ -290,21 +296,20 @@ class _MesasList extends StatelessWidget {
         final mesaNumero = (index + 1).toString();
         final asignado = veedores.where((v) => v.mesaId == mesaNumero).toList();
 
-        return Card(
+        return MetallicCard(
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              child: Text(mesaNumero),
+            leading: const CircleAvatar(
+              backgroundColor: Colors.transparent,
+              child: Icon(Icons.table_bar_rounded, size: 28),
             ),
             title: Text('Mesa $mesaNumero'),
             subtitle: asignado.isEmpty
                 ? const Text('Sin asignar',
-                    style: TextStyle(fontStyle: FontStyle.italic))
+                    style: TextStyle(fontStyle: FontStyle.italic, color: Colors.white70))
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: asignado
-                        .map((v) => Text('• ${v.nombreCompleto}'))
+                        .map((v) => Text('• ${v.nombreCompleto}', style: const TextStyle(color: Colors.white70)))
                         .toList(),
                   ),
             trailing: asignado.isNotEmpty
@@ -356,20 +361,22 @@ class _VeedoresList extends StatelessWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final v = veedores[index];
-        return Card(
+        return MetallicCard(
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.secondary,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.person),
+            leading: const CircleAvatar(
+              backgroundColor: Colors.transparent,
+              child: Icon(Icons.person_pin_rounded, size: 32),
             ),
             title: Text(v.nombreCompleto),
-            subtitle: Text('Cédula: ${v.cedula}'),
+            subtitle: Text('Cédula: ${v.cedula}', style: const TextStyle(color: Colors.white70)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Chip(
                   label: Text('Mesa ${v.mesaId ?? "-"}'),
+                  backgroundColor: Colors.white24,
+                  labelStyle: const TextStyle(color: Colors.white),
+                  side: BorderSide.none,
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/voto_partido_local_entity.dart';
 import 'camera_page.dart';
 
@@ -69,11 +70,17 @@ class _ActaFormPageState extends State<ActaFormPage> {
       setState(() => _errorMessage = 'El total de sufragantes debe ser mayor a 0.');
       return false;
     }
-    if (sumaTotal > total) {
+    
+    if (sumaTotal != total) {
+      final diferencia = (total - sumaTotal).abs();
+      final esSobrante = sumaTotal > total;
       setState(() => _errorMessage =
-          'La suma de votos ($sumaTotal) excede el total de sufragantes ($total).');
+          'Hay un descuadre en los votos. '
+          '${esSobrante ? 'Sobran' : 'Faltan'} $diferencia votos '
+          'para igualar el total de sufragantes ($total).');
       return false;
     }
+    
     setState(() => _errorMessage = null);
     return true;
   }
@@ -113,119 +120,146 @@ class _ActaFormPageState extends State<ActaFormPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Acta $tipoLabel'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.metallicGradient,
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Votos por Organización Política',
-                style: theme.textTheme.titleMedium,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.metallicGradient,
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.accent, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              ..._organizaciones.map((org) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: TextFormField(
-                      controller: _controllers[org],
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Votos por Organización Política',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    ..._organizaciones.map((org) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: TextFormField(
+                            controller: _controllers[org],
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            decoration: InputDecoration(
+                              labelText: org,
+                              hintText: '0',
+                            ),
+                            validator: (v) {
+                              if (v != null && v.isNotEmpty && int.tryParse(v.trim()) == null) {
+                                return 'Ingrese un número válido';
+                              }
+                              return null;
+                            },
+                          ),
+                        )),
+                    const Divider(height: 32),
+                    Text('Otros Votos', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _blancosCtrl,
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.next,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(
-                        labelText: org,
+                      decoration: const InputDecoration(
+                        labelText: 'Votos Blancos',
+                        hintText: '0',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _nulosCtrl,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.next,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(
+                        labelText: 'Votos Nulos',
+                        hintText: '0',
+                      ),
+                    ),
+                    const Divider(height: 32),
+                    Text('Total', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _sufragantesCtrl,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(
+                        labelText: 'Total de Sufragantes',
                         hintText: '0',
                       ),
                       validator: (v) {
-                        if (v != null && v.isNotEmpty && int.tryParse(v.trim()) == null) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'Este campo es obligatorio';
+                        }
+                        if (int.tryParse(v.trim()) == null) {
                           return 'Ingrese un número válido';
                         }
                         return null;
                       },
                     ),
-                  )),
-              const Divider(height: 32),
-              Text('Otros Votos', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _blancosCtrl,
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.next,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Votos Blancos',
-                  hintText: '0',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _nulosCtrl,
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.next,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Votos Nulos',
-                  hintText: '0',
-                ),
-              ),
-              const Divider(height: 32),
-              Text('Total', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _sufragantesCtrl,
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: 'Total de Sufragantes',
-                  hintText: '0',
-                ),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'Este campo es obligatorio';
-                  }
-                  if (int.tryParse(v.trim()) == null) {
-                    return 'Ingrese un número válido';
-                  }
-                  return null;
-                },
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline,
-                          color: theme.colorScheme.error, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.error,
-                          ),
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.error.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.error_outline,
+                                color: theme.colorScheme.error, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage!,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: _siguiente,
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('Siguiente: Capturar Foto'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: _siguiente,
+                      icon: const Icon(Icons.arrow_forward),
+                      label: const Text('Siguiente: Capturar Foto'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../../../../core/presentation/widgets/metallic_card.dart';
+import '../../../../core/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -42,6 +44,11 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel Provincial'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.metallicGradient,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -287,17 +294,19 @@ class _RecintosList extends StatelessWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final r = recintos[index];
-        return Card(
+        return MetallicCard(
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.place),
+            leading: const CircleAvatar(
+              backgroundColor: Colors.transparent,
+              child: Icon(Icons.account_balance_rounded, size: 32),
             ),
             title: Text(r.nombre),
-            subtitle: Text('${r.canton} - ${r.parroquia}'),
+            subtitle: Text('${r.canton} - ${r.parroquia}', style: const TextStyle(color: Colors.white70)),
             trailing: Chip(
               label: Text('${r.numMesas} mesas'),
+              backgroundColor: Colors.white24,
+              labelStyle: const TextStyle(color: Colors.white),
+              side: BorderSide.none,
             ),
           ),
         );
@@ -341,19 +350,18 @@ class _CoordinadoresList extends StatelessWidget {
           ),
         );
 
-        return Card(
+        return MetallicCard(
           child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.secondary,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.person),
+            leading: const CircleAvatar(
+              backgroundColor: Colors.transparent,
+              child: Icon(Icons.supervisor_account_rounded, size: 32),
             ),
             title: Text(c.nombreCompleto),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Cédula: ${c.cedula}'),
-                Text('Recinto: ${recinto.nombre}'),
+                Text('Cédula: ${c.cedula}', style: const TextStyle(color: Colors.white70)),
+                Text('Recinto: ${recinto.nombre}', style: const TextStyle(color: Colors.white70)),
               ],
             ),
             isThreeLine: true,

@@ -167,3 +167,34 @@ Se blindó la seguridad y la experiencia de usuario (UX) al implementar un siste
 4. **Estrategia de Compensación Visual (Limitaciones de Tier Gratuito):**
    - Dado que Appwrite Cloud gratuito prohíbe editar la plantilla del correo, se interceptaron los `SnackBar` en los Dashboards de Recinto/Provincial al crear usuarios, cambiándolos por un `AlertDialog` inevitable que indica textualmente al creador advertir al usuario sobre el correo en inglés y la clave `Ecuador2026`.
    - Se agregó una `InfoCard` elegante en el `LoginPage` para guiar a los usuarios nuevos.
+
+---
+
+## Sesión: Pulido Extremo UI/UX y Reglas de Negocio (Completada)
+**Fecha:** 2026-06-28
+**Herramienta:** Antigravity IDE
+
+### Resumen ejecutivo
+Se realizó el pulido final de la aplicación antes de la presentación, enfocándose en la estética premium ("Invente Román"), blindaje de datos mediante regex en los teclados, ajustes de umbrales para prevención de fraudes (cámara), y la solución definitiva a la validación de correos en Appwrite sin depender de Vercel/Esquemas custom.
+
+### Objetivos logrados:
+1. **Solución Definitiva Verificación de Correo (Netlify):**
+   - Para evitar el secuestro de la sesión nativa que causaba el AppLinks y el problema de que el fallback del `politik://verify` no funcionaba bien en la web de Appwrite, se configuró Netlify (`politik-app.netlify.app`) para interceptar el link y obligar al usuario a abrir la app a través del sistema de Android, o bien dar un mensaje manual si están en PC.
+   - Appwrite ahora redirige a `https://politik-app.netlify.app/` resolviendo la intercepción correcta del token sin mezclar sesiones web con la App.
+
+2. **Ajuste del Umbral de Cámara Anti-Fraude:**
+   - Reducción del umbral de nitidez (Blur Threshold) a `140.0` ya que 175 era muy estricto.
+   - Resolución de cámara ajustada a `1920x1920` con calidad `80%` previniendo errores de memoria (OOM) en dispositivos gama baja sin perder la legibilidad del acta (crucial para revisión del TCE).
+
+3. **Restricción Estricta de Formularios:**
+   - Blindaje en `create_veedor_dialog` y `create_coordinador_recinto_dialog` usando `FilteringTextInputFormatter.allow(RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$'))` impidiendo nombres o apellidos con números o símbolos.
+   - En `ActaFormPage`, el cálculo ahora no solo advierte, sino que fuerza a que `sumaVotos == totalSufragantes` sea **matemáticamente exacto**, mostrando dinámicamente cuántos votos sobran o faltan.
+
+4. **Upgrade Estético "Premium" (Metallic UI):**
+   - Sustitución de los emojis nativos de SO por Iconos Materiales de alta calidad dorados.
+   - `AppColors.metallicGradient` y `AppColors.goldGradient` incorporados.
+   - Todos los Dashboards (Provincial, Recinto, Veedor) y formularios modales utilizan ahora `MetallicCard` o bordes en `AppColors.accent`, desterrando el diseño blanco monótono genérico de Flutter.
+   - El `LoginPage` y `ActaFormPage` fueron envueltos en el gradiente metálico para transmitir un "Look Institucional/Elegante" desde el primer arranque.
+
+5. **Hotfix: Error Crítico de Permisos de Ubicación (GPS):**
+   - Se añadió `ACCESS_FINE_LOCATION` y `ACCESS_COARSE_LOCATION` en el `AndroidManifest.xml`. Flutter arrojaba una pantalla roja de error al intentar recuperar las coordenadas GPS al guardar el acta porque el paquete `geolocator` exige que estos permisos estén explícitos en el manifiesto nativo de Android.

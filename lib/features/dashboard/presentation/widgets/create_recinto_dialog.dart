@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/recinto_entity.dart';
 import '../bloc/provincial_bloc.dart';
 import '../bloc/provincial_event.dart';
@@ -54,7 +55,13 @@ class _CreateRecintoDialogState extends State<CreateRecintoDialog> {
     }
 
     return AlertDialog(
-      title: const Text('Nuevo Recinto'),
+      backgroundColor: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.accent, width: 2),
+      ),
+      elevation: 20,
+      title: const Text('Nuevo Recinto', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
       content: SizedBox(
         width: double.maxFinite,
         child: SingleChildScrollView(

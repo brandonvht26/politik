@@ -8,14 +8,19 @@ class ImageCaptureService {
 
   static final ImagePicker _picker = ImagePicker();
   static final ImageQualityValidator _validator = ImageQualityValidator(
-    config: QualityConfig.photoCapture,
+    config: const QualityConfig(blurThreshold: 140.0),
   );
 
   /// Opens the camera, validates image sharpness and returns the file path.
   ///
   /// Throws if the user cancels the capture or if the image is blurry.
   static Future<String> captureAndValidatePhoto() async {
-    final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+    final XFile? photo = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+      maxWidth: 1920,
+      maxHeight: 1920,
+    );
 
     if (photo == null) {
       throw Exception('No se tomó ninguna foto.');
