@@ -28,6 +28,7 @@ import '../features/dashboard/domain/usecases/reassign_veedor_mesa.dart';
 import '../features/dashboard/domain/usecases/get_actas.dart';
 import '../features/dashboard/domain/usecases/get_organizaciones_politicas.dart';
 import '../features/dashboard/domain/usecases/get_parroquias.dart';
+import '../features/dashboard/domain/usecases/subscribe_to_updates.dart';
 import '../features/dashboard/presentation/bloc/provincial_bloc.dart';
 import '../features/dashboard/presentation/bloc/recinto_bloc.dart';
 
@@ -64,6 +65,7 @@ class InjectionContainer {
   late final GetActas getActas;
   late final GetOrganizacionesPoliticas getOrganizacionesPoliticas;
   late final GetParroquias getParroquias;
+  late final SubscribeToUpdates subscribeToUpdates;
   late final ProvincialBloc provincialBloc;
   late final RecintoBloc recintoBloc;
 
@@ -107,6 +109,7 @@ class InjectionContainer {
     getActas = GetActas(dashboardRepository);
     getOrganizacionesPoliticas = GetOrganizacionesPoliticas(dashboardRepository);
     getParroquias = GetParroquias(dashboardRepository);
+    subscribeToUpdates = SubscribeToUpdates(dashboardRepository);
 
     provincialBloc = ProvincialBloc(
       getRecintos: getRecintos,
@@ -116,6 +119,7 @@ class InjectionContainer {
       getActas: getActas,
       getOrganizacionesPoliticas: getOrganizacionesPoliticas,
       getParroquias: getParroquias,
+      subscribeToUpdates: subscribeToUpdates,
     );
 
     recintoBloc = RecintoBloc(
@@ -123,6 +127,7 @@ class InjectionContainer {
       getVeedores: getVeedoresPorRecinto,
       createVeedor: createVeedor,
       reassignVeedorMesa: reassignVeedorMesa,
+      subscribeToUpdates: subscribeToUpdates,
     );
 
     syncService = SyncService(

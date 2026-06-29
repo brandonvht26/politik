@@ -4,15 +4,19 @@ import '../../domain/usecases/create_veedor.dart';
 import '../../domain/usecases/get_recinto.dart';
 import '../../domain/usecases/get_veedores_por_recinto.dart';
 import '../../domain/usecases/reassign_veedor_mesa.dart';
+import '../../domain/usecases/subscribe_to_updates.dart';
 import 'recinto_event.dart';
 import 'recinto_state.dart';
+import 'dart:async';
 
 class RecintoBloc extends Bloc<RecintoEvent, RecintoState> {
   final GetRecinto _getRecinto;
   final GetVeedoresPorRecinto _getVeedores;
   final CreateVeedor _createVeedor;
   final ReassignVeedorMesa _reassignVeedorMesa;
+  final SubscribeToUpdates _subscribeToUpdates;
 
+  StreamSubscription? _realtimeSubscription;
   String? _currentRecintoId;
 
   RecintoBloc({
@@ -20,14 +24,32 @@ class RecintoBloc extends Bloc<RecintoEvent, RecintoState> {
     required GetVeedoresPorRecinto getVeedores,
     required CreateVeedor createVeedor,
     required ReassignVeedorMesa reassignVeedorMesa,
+    required SubscribeToUpdates subscribeToUpdates,
   })  : _getRecinto = getRecinto,
         _getVeedores = getVeedores,
         _createVeedor = createVeedor,
         _reassignVeedorMesa = reassignVeedorMesa,
+        _subscribeToUpdates = subscribeToUpdates,
         super(RecintoInitial()) {
     on<LoadRecintoData>(_onLoadData);
     on<CreateVeedorRequested>(_onCreateVeedor);
     on<ReassignVeedorMesaRequested>(_onReassignMesa);
+    
+    _initRealtime();
+  }
+
+  void _initRealtime() {
+    _realtimeSubscription = _subscribeToUpdates().listen((event) {
+      if (state is! RecintoLoading && _currentRecintoId != null) {
+        add(LoadRecintoData(_currentRecintoId!));
+      }
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _realtimeSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> _onLoadData(

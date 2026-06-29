@@ -6,6 +6,7 @@ import '../../../../core/utils/cedula_validator.dart';
 import '../../domain/entities/recinto_entity.dart';
 import '../bloc/provincial_bloc.dart';
 import '../bloc/provincial_event.dart';
+import '../bloc/provincial_state.dart';
 
 class CreateCoordinadorRecintoDialog extends StatefulWidget {
   final List<RecintoEntity> recintos;
@@ -42,6 +43,28 @@ class _CreateCoordinadorRecintoDialogState
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+
+    final state = context.read<ProvincialBloc>().state;
+    if (state is ProvincialDataLoaded) {
+      final cedula = _cedulaCtrl.text.trim();
+      final correo = _correoCtrl.text.trim();
+      final telefono = _telefonoCtrl.text.trim();
+
+      for (final coord in state.coordinadores) {
+        if (coord.cedula == cedula) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ya existe un coordinador con esta cédula')));
+          return;
+        }
+        if (coord.correoReal == correo) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ya existe un coordinador con este correo electrónico')));
+          return;
+        }
+        if (coord.telefono == telefono) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ya existe un coordinador con este número de teléfono')));
+          return;
+        }
+      }
+    }
 
     context.read<ProvincialBloc>().add(
           CreateCoordinadorRecintoRequested(

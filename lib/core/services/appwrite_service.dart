@@ -12,6 +12,7 @@ class AppwriteService {
   late Account account;
   late Databases databases;
   late Storage storage;
+  late Realtime realtime;
 
   // Server SDK (required for hierarchical user creation with an API key).
   late server.Client serverClient;
@@ -45,6 +46,7 @@ class AppwriteService {
     account = Account(client);
     databases = Databases(client);
     storage = Storage(client);
+    realtime = Realtime(client);
 
     // Server SDK initialization (only needed for creating sub-users).
     serverClient = server.Client()

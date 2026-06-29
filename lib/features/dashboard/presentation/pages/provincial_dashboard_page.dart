@@ -53,10 +53,13 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
       body: SafeArea(
         child: BlocConsumer<ProvincialBloc, ProvincialState>(
           listener: (context, state) {
-            if (state is ProvincialError) {
+            if (state is ProvincialError || state is ProvincialActionError) {
+              final message = state is ProvincialError 
+                ? state.message 
+                : (state as ProvincialActionError).message;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(state.message),
+                  content: Text(message),
                   backgroundColor: theme.colorScheme.error,
                 ),
               );
@@ -92,7 +95,9 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
             }
           },
           builder: (context, state) {
-            if (state is ProvincialLoading) {
+            if (state is ProvincialLoading || state is ProvincialActionError) {
+              // Return nothing if it's an action error, as the data will be reloaded immediately
+              if (state is ProvincialActionError) return const SizedBox.shrink();
               return const Center(child: CircularProgressIndicator());
             }
 

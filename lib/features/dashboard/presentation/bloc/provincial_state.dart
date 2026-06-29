@@ -42,6 +42,15 @@ class ProvincialActionSuccess extends ProvincialState {
   List<Object?> get props => [message];
 }
 
+class ProvincialActionError extends ProvincialState {
+  final String message;
+
+  const ProvincialActionError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class ProvincialError extends ProvincialState {
   final String message;
 

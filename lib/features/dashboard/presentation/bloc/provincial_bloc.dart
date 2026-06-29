@@ -10,8 +10,10 @@ import '../../domain/usecases/get_recintos.dart';
 import '../../domain/usecases/get_actas.dart';
 import '../../domain/usecases/get_organizaciones_politicas.dart';
 import '../../domain/usecases/get_parroquias.dart';
+import '../../domain/usecases/subscribe_to_updates.dart';
 import 'provincial_event.dart';
 import 'provincial_state.dart';
+import 'dart:async';
 
 class ProvincialBloc extends Bloc<ProvincialEvent, ProvincialState> {
   final GetRecintos _getRecintos;
@@ -21,6 +23,9 @@ class ProvincialBloc extends Bloc<ProvincialEvent, ProvincialState> {
   final GetActas _getActas;
   final GetOrganizacionesPoliticas _getOrganizacionesPoliticas;
   final GetParroquias _getParroquias;
+  final SubscribeToUpdates _subscribeToUpdates;
+  
+  StreamSubscription? _realtimeSubscription;
 
   ProvincialBloc({
     required GetRecintos getRecintos,
@@ -30,6 +35,7 @@ class ProvincialBloc extends Bloc<ProvincialEvent, ProvincialState> {
     required GetActas getActas,
     required GetOrganizacionesPoliticas getOrganizacionesPoliticas,
     required GetParroquias getParroquias,
+    required SubscribeToUpdates subscribeToUpdates,
   })  : _getRecintos = getRecintos,
         _getCoordinadores = getCoordinadores,
         _createRecinto = createRecinto,
@@ -37,10 +43,27 @@ class ProvincialBloc extends Bloc<ProvincialEvent, ProvincialState> {
         _getActas = getActas,
         _getOrganizacionesPoliticas = getOrganizacionesPoliticas,
         _getParroquias = getParroquias,
+        _subscribeToUpdates = subscribeToUpdates,
         super(ProvincialInitial()) {
     on<LoadProvincialData>(_onLoadData);
     on<CreateRecintoRequested>(_onCreateRecinto);
     on<CreateCoordinadorRecintoRequested>(_onCreateCoordinador);
+    
+    _initRealtime();
+  }
+
+  void _initRealtime() {
+    _realtimeSubscription = _subscribeToUpdates().listen((event) {
+      if (state is! ProvincialLoading) {
+        add(LoadProvincialData());
+      }
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _realtimeSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> _onLoadData(
@@ -81,7 +104,8 @@ class ProvincialBloc extends Bloc<ProvincialEvent, ProvincialState> {
       emit(const ProvincialActionSuccess('Recinto creado exitosamente'));
       add(LoadProvincialData());
     } catch (e) {
-      emit(ProvincialError(e.toString()));
+      emit(ProvincialActionError(e.toString()));
+      add(LoadProvincialData());
     }
   }
 
@@ -105,7 +129,8 @@ class ProvincialBloc extends Bloc<ProvincialEvent, ProvincialState> {
       ));
       add(LoadProvincialData());
     } catch (e) {
-      emit(ProvincialError(e.toString()));
+      emit(ProvincialActionError(e.toString()));
+      add(LoadProvincialData());
     }
   }
 }

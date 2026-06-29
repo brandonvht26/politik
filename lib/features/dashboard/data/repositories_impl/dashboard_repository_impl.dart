@@ -145,6 +145,15 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   @override
+  Stream<dynamic> subscribeToUpdates() {
+    return _appwrite.realtime.subscribe([
+      'databases.${_appwrite.databaseId}.collections.${_appwrite.actasCollectionId}.documents',
+      'databases.${_appwrite.databaseId}.collections.${_appwrite.profilesCollectionId}.documents',
+      'databases.${_appwrite.databaseId}.collections.${_appwrite.recintosCollectionId}.documents',
+    ]).stream;
+  }
+
+  @override
   Future<void> createCoordinadorRecinto({
     required String cedula,
     required String nombres,
@@ -177,11 +186,12 @@ class DashboardRepositoryImpl implements DashboardRepository {
           'correo_real': correoReal,
           'rol': 'recinto',
           'recinto_id': recintoId,
+          'requires_password_change': true,
         },
       );
 
-      // Enviar correo de verificación en background usando sesión efímera
-      _sendVerificationEmail(correoReal, 'Ecuador2026');
+      // Enviar correo de verificación y asegurar que atrape cualquier error
+      await _sendVerificationEmail(correoReal, 'Ecuador2026');
     } on server.AppwriteException catch (e) {
       throw Exception(e.message ?? 'Error al crear el coordinador de recinto');
     } on AppwriteException catch (e) {
@@ -224,11 +234,12 @@ class DashboardRepositoryImpl implements DashboardRepository {
           'rol': 'veedor',
           'recinto_id': recintoId,
           'mesa_id': mesaId,
+          'requires_password_change': true,
         },
       );
 
-      // Enviar correo de verificación en background usando sesión efímera
-      _sendVerificationEmail(correoReal, 'Ecuador2026');
+      // Enviar correo de verificación y asegurar que atrape cualquier error
+      await _sendVerificationEmail(correoReal, 'Ecuador2026');
     } on server.AppwriteException catch (e) {
       throw Exception(e.message ?? 'Error al crear el veedor');
     } on AppwriteException catch (e) {
@@ -281,6 +292,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
   /// Hack necesario porque el Server SDK (users.create) no dispara correos de verificación automáticos.
   Future<void> _sendVerificationEmail(String email, String password) async {
     try {
+      // Cliente aislado sin afectar las SharedPreferences de la sesión del administrador
       final tempClient = Client()
           .setEndpoint(_appwrite.endpoint)
           .setProject(_appwrite.projectId)
@@ -288,20 +300,23 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
       final tempAccount = Account(tempClient);
       
-      // 1. Iniciar sesión efímera
-      final session = await tempAccount.createEmailPasswordSession(
+      // 1. Iniciar sesión efímera (se guarda en memoria para tempClient)
+      await tempAccount.createEmailPasswordSession(
         email: email, 
         password: password,
       );
 
-      // 2. Solicitar verificación (Dispara el correo de Appwrite al `correoReal`)
-      await tempAccount.createVerification(url: 'politik://verify');
+      // 2. Solicitar verificación (Requiere esquema HTTP/HTTPS obligatorio en Appwrite Cloud)
+      // La auditoría OWASP recomendó un deep link directo, pero por diseño, Appwrite Cloud
+      // rechaza esquemas nativos (politik://) con un error 400 ya que los clientes de correo (Gmail)
+      // los bloquean. Usamos la plataforma Web registrada para el redireccionamiento.
+      await tempAccount.createVerification(url: 'https://politik-app.com/verify');
 
-      // 3. Cerrar sesión
-      await tempAccount.deleteSession(sessionId: session.$id);
-    } catch (e) {
-      // Si falla, solo lo registramos, pero no bloqueamos la creación del usuario.
-      debugPrint('Advertencia: No se pudo enviar el correo de verificación a $email: $e');
+      // IMPORTANTE: NO usamos deleteSession() porque la implementación interna de
+      // flutter_appwrite borra la cache local completa, destruyendo la sesión del Provincial.
+    } catch (e, stackTrace) {
+      debugPrintStack(stackTrace: stackTrace, label: 'Fallo crítico al enviar correo de verificación');
+      throw Exception('No se pudo enviar el correo de verificación. El usuario ha sido creado pero requiere verificación manual. Error: $e');
     }
   }
 }

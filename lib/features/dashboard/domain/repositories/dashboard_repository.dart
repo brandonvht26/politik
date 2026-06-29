@@ -22,6 +22,8 @@ abstract class DashboardRepository {
 
   Future<List<Map<String, dynamic>>> getParroquias();
 
+  Stream<dynamic> subscribeToUpdates();
+
   Future<void> createCoordinadorRecinto({
     required String cedula,
     required String nombres,
