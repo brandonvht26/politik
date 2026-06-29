@@ -337,7 +337,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
       
       // La auditoría recomendaba politik://verify pero Appwrite Cloud rechaza esquemas nativos.
       verifyReq.add(utf8.encode(jsonEncode({
-        'url': 'https://politik-app.com/verify'
+        'url': 'https://politik-app.netlify.app/'
       })));
       
       final verifyRes = await verifyReq.close();

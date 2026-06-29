@@ -199,9 +199,9 @@
             }
 
             try {
-                // 1. Inicializar Appwrite (Sustituimos el tuyo real de appwrite)
+                // 1. Inicializar Appwrite (Sustituimos el tuyo real de appwrite y SU ENDPOINT CORRECTO: nyc)
                 const client = new Appwrite.Client()
-                    .setEndpoint('https://cloud.appwrite.io/v1')
+                    .setEndpoint('https://nyc.cloud.appwrite.io/v1')
                     .setProject('6a3d9de20033b2990675'); // Este es tu PROJECT ID, lo saqué de tu código
 
                 const account = new Appwrite.Account(client);
