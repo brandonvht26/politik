@@ -395,6 +395,12 @@ Nuestra app está orientada al **delegado de partido / veedor de mesa**, quien:
 3. Fotografía el acta después del escrutinio.
 4. La app valida nitidez y guarda/sincroniza la evidencia.
 
+### 5.4 Justificación sobre Asignación de Veedores y Modificación de Actas
+
+Durante el día de las elecciones ocurren imprevistos. Para abordar esto sin depender de costosos sistemas de notificaciones automatizadas, adoptamos la siguiente lógica de negocio:
+- **Ausencia y Flexibilidad de Veedores:** Si bien un veedor tiene una JRV asignada en su perfil, el Coordinador de Recinto (estando presencialmente en el lugar) tiene la facultad in-situ de **reasignar mesas** libremente usando la aplicación. Esto justifica plenamente que **no haya límite de asignaciones por veedor**; un mismo veedor puede cubrir a otros a lo largo de la jornada con una simple edición de su coordinador.
+- **Auditoría de Actas:** Un veedor, por seguridad, tiene una única oportunidad para enviar los datos de su acta. Una vez subida, pasa a **Modo Lectura** para él. Si existe una inconsistencia, solo el Coordinador de Recinto, que posee un CRUD privilegiado, puede alterar el registro y tomar una nueva fotografía de la evidencia. Esto previene dobles envíos maliciosos por parte de los operadores de base.
+
 ---
 
 ## 6. Resumen del Flujo Completo

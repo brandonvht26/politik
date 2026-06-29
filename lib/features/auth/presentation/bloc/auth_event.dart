@@ -30,3 +30,27 @@ class ChangePasswordRequested extends AuthEvent {
 }
 
 class LogoutRequested extends AuthEvent {}
+
+class PasswordRecoveryRequested extends AuthEvent {
+  final String cedula;
+
+  const PasswordRecoveryRequested({required this.cedula});
+
+  @override
+  List<Object?> get props => [cedula];
+}
+
+class PasswordResetConfirmed extends AuthEvent {
+  final String userId;
+  final String secret;
+  final String newPassword;
+
+  const PasswordResetConfirmed({
+    required this.userId,
+    required this.secret,
+    required this.newPassword,
+  });
+
+  @override
+  List<Object?> get props => [userId, secret, newPassword];
+}

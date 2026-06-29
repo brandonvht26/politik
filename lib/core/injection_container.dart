@@ -14,6 +14,8 @@ import '../features/auth/domain/repositories/auth_repository.dart';
 import '../features/auth/domain/usecases/change_password.dart';
 import '../features/auth/domain/usecases/login_user.dart';
 import '../features/auth/domain/usecases/logout_user.dart';
+import '../features/auth/domain/usecases/request_password_recovery.dart';
+import '../features/auth/domain/usecases/confirm_password_recovery.dart';
 import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/dashboard/data/repositories_impl/dashboard_repository_impl.dart';
 import '../features/dashboard/domain/repositories/dashboard_repository.dart';
@@ -50,6 +52,8 @@ class InjectionContainer {
   late final LoginUser loginUser;
   late final ChangePassword changePassword;
   late final LogoutUser logoutUser;
+  late final RequestPasswordRecovery requestPasswordRecovery;
+  late final ConfirmPasswordRecovery confirmPasswordRecovery;
   late final AuthBloc authBloc;
 
   // Dashboard feature (Fase 3)
@@ -91,10 +95,15 @@ class InjectionContainer {
     loginUser = LoginUser(authRepository);
     changePassword = ChangePassword(authRepository);
     logoutUser = LogoutUser(authRepository);
+    requestPasswordRecovery = RequestPasswordRecovery(authRepository);
+    confirmPasswordRecovery = ConfirmPasswordRecovery(authRepository);
+    
     authBloc = AuthBloc(
       loginUser: loginUser,
       changePassword: changePassword,
       logoutUser: logoutUser,
+      requestPasswordRecovery: requestPasswordRecovery,
+      confirmPasswordRecovery: confirmPasswordRecovery,
     );
 
     dashboardRepository = DashboardRepositoryImpl();

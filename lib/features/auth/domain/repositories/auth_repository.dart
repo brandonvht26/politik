@@ -22,4 +22,14 @@ abstract class AuthRepository {
 
   /// Ends the Appwrite session and clears the local Hive session.
   Future<void> logout();
+
+  /// Requests a password recovery email for the user with the given [cedula].
+  Future<void> requestPasswordRecovery({required String cedula});
+
+  /// Confirms the password recovery and updates the password in Appwrite.
+  Future<void> confirmPasswordRecovery({
+    required String userId,
+    required String secret,
+    required String newPassword,
+  });
 }

@@ -112,24 +112,44 @@ class SyncService {
         votosMap[voto.nombreOrganizacion] = voto.cantidadVotos;
       }
 
-      // 3. Create the acta document in Appwrite Database.
-      await _appwrite.databases.createDocument(
+      final existingDocs = await _appwrite.databases.listDocuments(
         databaseId: _appwrite.databaseId,
         collectionId: _appwrite.actasCollectionId,
-        documentId: ID.unique(),
-        data: {
-          'recinto_id': acta.recintoId,
-          'mesa_id': acta.mesaId,
-          'tipo': acta.tipo,
-          'votos_partidos': jsonEncode(votosMap),
-          'votos_blancos': acta.votosBlancos,
-          'votos_nulos': acta.votosNulos,
-          'total_sufragantes': acta.totalSufragantes,
-          'latitud': acta.latitud,
-          'longitud': acta.longitud,
-          'image_id': imageId,
-        },
+        queries: [
+          Query.equal('recinto_id', acta.recintoId),
+          Query.equal('id_jrv', acta.mesaId),
+          Query.equal('dignidad', acta.tipo),
+        ],
       );
+
+      final dataPayload = {
+        'recinto_id': acta.recintoId,
+        'id_jrv': acta.mesaId,
+        'dignidad': acta.tipo,
+        'votos_partidos': jsonEncode(votosMap),
+        'votos_blancos': acta.votosBlancos,
+        'votos_nulos': acta.votosNulos,
+        'total_sufragantes': acta.totalSufragantes,
+        'latitud': acta.latitud,
+        'longitud': acta.longitud,
+        'image_id': imageId,
+      };
+
+      if (existingDocs.documents.isNotEmpty) {
+        await _appwrite.databases.updateDocument(
+          databaseId: _appwrite.databaseId,
+          collectionId: _appwrite.actasCollectionId,
+          documentId: existingDocs.documents.first.$id,
+          data: dataPayload,
+        );
+      } else {
+        await _appwrite.databases.createDocument(
+          databaseId: _appwrite.databaseId,
+          collectionId: _appwrite.actasCollectionId,
+          documentId: ID.unique(),
+          data: dataPayload,
+        );
+      }
 
       // 4. Mark local record as synced ONLY after remote success.
       final syncedActa = ActaEscrutinioLocalModel(

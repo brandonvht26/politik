@@ -180,18 +180,21 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                                   const SizedBox(height: 12),
                                   OutlinedButton.icon(
                                     onPressed: () {
-                                      if (state.recintos.isEmpty) {
+                                      final assignedRecintoIds = state.coordinadores.map((c) => c.recintoId).toSet();
+                                      final availableRecintos = state.recintos.where((r) => !assignedRecintoIds.contains(r.id)).toList();
+
+                                      if (availableRecintos.isEmpty) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
                                             content: const Text(
-                                              'Debe crear al menos un recinto primero',
+                                              'No hay recintos disponibles (todos tienen coordinador) o debe crear uno.',
                                             ),
                                             backgroundColor: theme.colorScheme.error,
                                           ),
                                         );
                                         return;
                                       }
-                                      _showCreateCoordinadorDialog(context, state.recintos);
+                                      _showCreateCoordinadorDialog(context, availableRecintos);
                                     },
                                     icon: const Icon(Icons.person_add),
                                     label: const Text('Nuevo Coordinador'),
@@ -416,42 +419,46 @@ class _ResultadosTab extends StatelessWidget {
 
     // Inicializar organizaciones
     for (var org in organizacionesPoliticas) {
-      final nombre = org['nombre_partido'] as String;
-      final dignidad = org['dignidad'] as String;
-      if (dignidad == 'alcalde') {
-        votosAlcalde[nombre] = 0;
-      } else if (dignidad == 'prefecto') {
-        votosPrefecto[nombre] = 0;
+      try {
+        final nombre = org['nombre_partido']?.toString() ?? '';
+        final dignidad = org['dignidad']?.toString() ?? '';
+        if (dignidad == 'alcalde' && nombre.isNotEmpty) {
+          votosAlcalde[nombre] = 0;
+        } else if (dignidad == 'prefecto' && nombre.isNotEmpty) {
+          votosPrefecto[nombre] = 0;
+        }
+      } catch (e) {
+        debugPrint('Error parseando organizacion: $e');
       }
     }
 
     // Sumar desde las actas
     for (var acta in actas) {
-      final tipo = acta['tipo'] as String;
-      final votosStr = acta['votos_partidos'] as String;
-      final blancos = (acta['votos_blancos'] as num?)?.toInt() ?? 0;
-      final nulos = (acta['votos_nulos'] as num?)?.toInt() ?? 0;
-
-      if (tipo == 'alcalde') {
-        totalBlancosAlcalde += blancos;
-        totalNulosAlcalde += nulos;
-      } else {
-        totalBlancosPrefecto += blancos;
-        totalNulosPrefecto += nulos;
-      }
-
       try {
+        final tipo = acta['dignidad']?.toString() ?? acta['tipo']?.toString() ?? '';
+        final votosStr = acta['votos_partidos']?.toString() ?? '{}';
+        final blancos = (acta['votos_blancos'] as num?)?.toInt() ?? 0;
+        final nulos = (acta['votos_nulos'] as num?)?.toInt() ?? 0;
+
+        if (tipo == 'alcalde') {
+          totalBlancosAlcalde += blancos;
+          totalNulosAlcalde += nulos;
+        } else if (tipo == 'prefecto') {
+          totalBlancosPrefecto += blancos;
+          totalNulosPrefecto += nulos;
+        }
+
         final Map<String, dynamic> votosMap = jsonDecode(votosStr);
         votosMap.forEach((key, value) {
-          final int cantidad = (value as num).toInt();
+          final int cantidad = (value as num?)?.toInt() ?? 0;
           if (tipo == 'alcalde') {
             votosAlcalde[key] = (votosAlcalde[key] ?? 0) + cantidad;
-          } else {
+          } else if (tipo == 'prefecto') {
             votosPrefecto[key] = (votosPrefecto[key] ?? 0) + cantidad;
           }
         });
       } catch (e) {
-        debugPrint('Error parseando votos_partidos: $e');
+        debugPrint('Error procesando acta: $e');
       }
     }
 

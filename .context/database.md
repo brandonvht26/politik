@@ -38,8 +38,8 @@ Contiene los candidatos precargados (12 en total) tanto para Alcaldía como Pref
 - **Permisos:** Document Security habilitado. Veedores no pueden ver actas de otros recintos.
 - **Atributos:**
   - `recinto_id` (String)
-  - `mesa_id` (String)
-  - `tipo` (String) -> 'alcalde' o 'prefecto'
+  - `id_jrv` (String)
+  - `dignidad` (String) -> 'alcalde' o 'prefecto'
   - `votos_partidos` (String/JSON) -> Serialización de votos.
   - `votos_blancos` (Integer)
   - `votos_nulos` (Integer)

@@ -1,12 +1,17 @@
+import 'dart:convert';
+import 'package:appwrite/appwrite.dart' as appwrite_sdk;
+import 'package:appwrite/models.dart' as appwrite_models;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/presentation/widgets/metallic_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/local_storage_service.dart';
+import '../../../../core/services/appwrite_service.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../domain/entities/user_profile_entity.dart';
+import '../../../acta_escrutinio/presentation/pages/acta_form_page.dart';
 import '../bloc/recinto_bloc.dart';
 import '../bloc/recinto_event.dart';
 import '../bloc/recinto_state.dart';
@@ -247,6 +252,23 @@ class _RecintoDashboardPageState extends State<RecintoDashboardPage> {
                         veedores: veedores,
                         numMesas: recinto.numMesas,
                       ),
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          Icon(Icons.description,
+                              color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Actas Recibidas',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      _ActasRecibidasList(recintoId: recinto.id),
                     ],
                   ),
                 ),
@@ -421,3 +443,91 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
+
+class _ActasRecibidasList extends StatefulWidget {
+  final String recintoId;
+  const _ActasRecibidasList({required this.recintoId});
+  @override
+  State<_ActasRecibidasList> createState() => _ActasRecibidasListState();
+}
+
+class _ActasRecibidasListState extends State<_ActasRecibidasList> {
+  List<appwrite_models.Document> _actas = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadActas();
+  }
+
+  Future<void> _loadActas() async {
+    try {
+      final appwrite = AppwriteService();
+      final res = await appwrite.databases.listDocuments(
+        databaseId: appwrite.databaseId,
+        collectionId: appwrite.actasCollectionId,
+        queries: [
+          appwrite_sdk.Query.equal('recinto_id', widget.recintoId),
+        ],
+      );
+      if (mounted) {
+        setState(() {
+          _actas = res.documents;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_actas.isEmpty) return const _EmptyState(message: 'No se han recibido actas aún.');
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _actas.length,
+      itemBuilder: (context, index) {
+        final doc = _actas[index];
+        final data = doc.data;
+        // Parse JSON votos_partidos for the form
+        Map<String, dynamic> actData = Map.from(data);
+        if (actData['votos_partidos'] is String) {
+          actData['votos_partidos'] = jsonDecode(actData['votos_partidos']);
+        }
+        
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: const Icon(Icons.file_copy, color: AppColors.accent),
+            title: Text('Acta ${data['dignidad'].toString().toUpperCase()} - JRV N°${data['id_jrv']}'),
+            subtitle: Text('Total Votos: ${data['total_sufragantes']}'),
+            trailing: IconButton(
+              icon: const Icon(Icons.edit, color: AppColors.primary),
+              tooltip: 'Corregir Acta',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ActaFormPage(
+                      tipo: data['dignidad'],
+                      isReadOnly: false,
+                      initialData: actData,
+                    ),
+                  ),
+                ).then((_) => _loadActas()); // refresh when returning
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+

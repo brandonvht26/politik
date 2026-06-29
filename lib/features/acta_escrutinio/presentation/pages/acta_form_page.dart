@@ -7,10 +7,14 @@ import 'camera_page.dart';
 
 class ActaFormPage extends StatefulWidget {
   final String tipo;
+  final bool isReadOnly;
+  final Map<String, dynamic>? initialData;
 
   const ActaFormPage({
     super.key,
     required this.tipo,
+    this.isReadOnly = false,
+    this.initialData,
   });
 
   @override
@@ -39,8 +43,46 @@ class _ActaFormPageState extends State<ActaFormPage> {
   void initState() {
     super.initState();
     for (final org in _organizaciones) {
-      _controllers[org] = TextEditingController();
+      _controllers[org] = TextEditingController(
+        text: widget.initialData?['votos_partidos']?[org]?.toString() ?? '',
+      );
     }
+    _blancosCtrl.text = widget.initialData?['votos_blancos']?.toString() ?? '';
+    _nulosCtrl.text = widget.initialData?['votos_nulos']?.toString() ?? '';
+    _sufragantesCtrl.text = widget.initialData?['total_sufragantes']?.toString() ?? '';
+
+    if (!widget.isReadOnly && widget.initialData == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showHelpModal();
+      });
+    }
+  }
+
+  void _showHelpModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Aviso Importante'),
+        content: const Text(
+          'Por favor, asegúrate de ingresar los datos correctamente.\n\n'
+          'Si no te sientes seguro de poder llenar el formulario correctamente, por favor informa al Coordinador de Recinto para que él lo llene por ti.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop(); // Go back
+            },
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -89,6 +131,36 @@ class _ActaFormPageState extends State<ActaFormPage> {
     if (!_formKey.currentState!.validate()) return;
     if (!_validarVotos()) return;
 
+    if (!widget.isReadOnly && widget.initialData == null) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Confirmación'),
+          content: const Text(
+            '¿Estás seguro de que los datos son correctos?\n\n'
+            'Una vez enviada el acta, no podrás modificarla. Solo el Coordinador de Recinto podrá corregirla en caso de error.'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Revisar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _navegarCamara();
+              },
+              child: const Text('Sí, enviar'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      _navegarCamara();
+    }
+  }
+
+  void _navegarCamara() {
     final votosPartidos = _organizaciones
         .map(
           (org) => VotoPartidoLocalEntity(
@@ -160,6 +232,7 @@ class _ActaFormPageState extends State<ActaFormPage> {
                     ..._organizaciones.map((org) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: TextFormField(
+                            readOnly: widget.isReadOnly,
                             controller: _controllers[org],
                             keyboardType: TextInputType.number,
                             textInputAction: TextInputAction.next,
@@ -180,6 +253,7 @@ class _ActaFormPageState extends State<ActaFormPage> {
                     Text('Otros Votos', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 12),
                     TextFormField(
+                      readOnly: widget.isReadOnly,
                       controller: _blancosCtrl,
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.next,
@@ -191,6 +265,7 @@ class _ActaFormPageState extends State<ActaFormPage> {
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
+                      readOnly: widget.isReadOnly,
                       controller: _nulosCtrl,
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.next,
@@ -204,6 +279,7 @@ class _ActaFormPageState extends State<ActaFormPage> {
                     Text('Total', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 12),
                     TextFormField(
+                      readOnly: widget.isReadOnly,
                       controller: _sufragantesCtrl,
                       keyboardType: TextInputType.number,
                       textInputAction: TextInputAction.done,
@@ -248,14 +324,15 @@ class _ActaFormPageState extends State<ActaFormPage> {
                       ),
                     ],
                     const SizedBox(height: 24),
-                    FilledButton.icon(
-                      onPressed: _siguiente,
-                      icon: const Icon(Icons.arrow_forward),
-                      label: const Text('Siguiente: Capturar Foto'),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                    if (!widget.isReadOnly)
+                      FilledButton.icon(
+                        onPressed: _siguiente,
+                        icon: const Icon(Icons.arrow_forward),
+                        label: const Text('Siguiente: Capturar Foto'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),

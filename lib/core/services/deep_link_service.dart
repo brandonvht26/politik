@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'appwrite_service.dart';
+import '../../features/auth/presentation/pages/password_reset_page.dart';
 
 class DeepLinkService {
   final AppwriteService _appwrite;
@@ -66,7 +67,23 @@ class DeepLinkService {
           }
         }
       }
-    }
+    } else if (uri.scheme == 'politik' && uri.host == 'reset-password') {
+      final userId = uri.queryParameters['userId'];
+      final secret = uri.queryParameters['secret'];
+
+      if (userId != null && secret != null) {
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PasswordResetPage(
+                userId: userId,
+                secret: secret,
+              ),
+            ),
+          );
+        }
+      }
   }
 
   void dispose() {

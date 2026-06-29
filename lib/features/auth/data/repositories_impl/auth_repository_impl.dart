@@ -182,4 +182,51 @@ class AuthRepositoryImpl implements AuthRepository {
     _currentUser = null;
     _pendingSession = null;
   }
+
+  @override
+  Future<void> requestPasswordRecovery({required String cedula}) async {
+    try {
+      final profileList = await _appwrite.databases.listDocuments(
+        databaseId: _appwrite.databaseId,
+        collectionId: _appwrite.profilesCollectionId,
+        queries: [Query.equal('cedula', cedula)],
+      );
+
+      if (profileList.documents.isEmpty) {
+        throw Exception('No se encontró cuenta asociada a la cédula $cedula');
+      }
+
+      final profile = profileList.documents.first.data;
+      final email = profile['correo_real'] as String?;
+
+      if (email == null || email.isEmpty) {
+        throw Exception('El usuario no tiene un correo electrónico configurado');
+      }
+
+      await _appwrite.account.createRecovery(
+        email: email,
+        url: 'politik://reset-password',
+      );
+    } on AppwriteException catch (e) {
+      throw Exception('Error al solicitar recuperación: ${e.message}');
+    }
+  }
+
+  @override
+  Future<void> confirmPasswordRecovery({
+    required String userId,
+    required String secret,
+    required String newPassword,
+  }) async {
+    try {
+      await _appwrite.account.updateRecovery(
+        userId: userId,
+        secret: secret,
+        password: newPassword,
+        passwordAgain: newPassword,
+      );
+    } on AppwriteException catch (e) {
+      throw Exception('Error al restablecer contraseña: ${e.message}');
+    }
+  }
 }
