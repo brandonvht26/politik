@@ -205,7 +205,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await _appwrite.account.createRecovery(
         email: email,
-        url: 'politik://reset-password',
+        url: 'https://politik-app.netlify.app/reset-password',
       );
     } on AppwriteException catch (e) {
       throw Exception('Error al solicitar recuperación: ${e.message}');
@@ -223,7 +223,6 @@ class AuthRepositoryImpl implements AuthRepository {
         userId: userId,
         secret: secret,
         password: newPassword,
-        passwordAgain: newPassword,
       );
     } on AppwriteException catch (e) {
       throw Exception('Error al restablecer contraseña: ${e.message}');

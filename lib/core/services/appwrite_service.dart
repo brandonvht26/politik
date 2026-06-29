@@ -26,11 +26,11 @@ class AppwriteService {
   String get parroquiasCollectionId => dotenv.env['APPWRITE_PARROQUIAS_COLLECTION_ID'] ?? '';
   String get storageBucketId => dotenv.env['APPWRITE_STORAGE_BUCKET_ID'] ?? '';
   String get apiKey => dotenv.env['APPWRITE_API_KEY'] ?? '';
-  String get endpoint => dotenv.env['APPWRITE_ENDPOINT'] ?? 'https://cloud.appwrite.io/v1';
+  String get endpoint => dotenv.env['APPWRITE_ENDPOINT'] ?? 'https://nyc.cloud.appwrite.io/v1';
   String get projectId => dotenv.env['APPWRITE_PROJECT_ID'] ?? '';
 
   Future<void> init() async {
-    final endpoint = dotenv.env['APPWRITE_ENDPOINT'] ?? 'https://cloud.appwrite.io/v1';
+    final endpoint = dotenv.env['APPWRITE_ENDPOINT'] ?? 'https://nyc.cloud.appwrite.io/v1';
     final projectId = dotenv.env['APPWRITE_PROJECT_ID'] ?? '';
 
     if (projectId.isEmpty) {

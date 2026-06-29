@@ -67,7 +67,8 @@ class DeepLinkService {
           }
         }
       }
-    } else if (uri.scheme == 'politik' && uri.host == 'reset-password') {
+    } else if ((uri.scheme == 'politik' && uri.host == 'reset-password') ||
+               (uri.scheme == 'https' && uri.host == 'politik-app.netlify.app' && uri.path == '/reset-password')) {
       final userId = uri.queryParameters['userId'];
       final secret = uri.queryParameters['secret'];
 
@@ -84,6 +85,7 @@ class DeepLinkService {
           );
         }
       }
+    }
   }
 
   void dispose() {

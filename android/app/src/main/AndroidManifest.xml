@@ -40,13 +40,15 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Deep Linking for Appwrite Email Verification -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <!-- Accepts URIs that begin with "politik://verify" -->
                 <data android:scheme="politik" android:host="verify" />
+                <data android:scheme="politik" android:host="reset-password" />
+                
+                <!-- Intercept https link directly from email -->
+                <data android:scheme="https" android:host="politik-app.netlify.app" android:path="/reset-password" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
