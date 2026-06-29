@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación de Cuenta - Politik</title>
+    <!-- Appwrite Web SDK CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.0"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            /* Degradado elegante con los colores del proyecto: Primary #0D3261 a Secondary #1F61B5 */
+            background: linear-gradient(135deg, #0D3261 0%, #1F61B5 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Elementos flotantes animados para el fondo */
+        .background-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+        
+        .shape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        .shape:nth-child(1) { width: 300px; height: 300px; top: -100px; left: -100px; animation-duration: 20s; }
+        .shape:nth-child(2) { width: 200px; height: 200px; bottom: -50px; right: -50px; animation-duration: 15s; animation-delay: -5s; }
+        .shape:nth-child(3) { width: 150px; height: 150px; top: 40%; left: 60%; animation-duration: 18s; animation-delay: -2s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.05); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 48px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: slideUp 0.6s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: #f0f4ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+        }
+
+        .icon.success { background: #d1f4e0; }
+        .icon.error { background: #ffe0e0; }
+        .icon.loading { background: #e0e7ff; }
+
+        .icon svg {
+            width: 48px;
+            height: 48px;
+        }
+
+        h1 {
+            color: #0D3261;
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+
+        p {
+            color: #64748B;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .button {
+            background: #F9A825; /* Accent Color (Amarillo/Dorado) */
+            color: #0D3261;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(249, 168, 37, 0.4);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(249, 168, 37, 0.6);
+            background: #fbc02d;
+        }
+
+        .loader {
+            border: 4px solid #c7d2fe;
+            border-top: 4px solid #1F61B5; /* Secondary Color */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <div class="container">
+        <!-- ESTADO DE CARGA -->
+        <div id="loading" class="state-container">
+            <div class="icon loading">
+                <div class="loader"></div>
+            </div>
+            <h1>Verificando tu cuenta...</h1>
+            <p>Por favor espera un momento mientras validamos tus credenciales con el sistema electoral.</p>
+        </div>
+
+        <!-- ESTADO DE ÉXITO -->
+        <div id="success" class="state-container hidden">
+            <div class="icon success">
+                <svg fill="#16A34A" viewBox="0 0 24 24"> <!-- Success Color -->
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+            </div>
+            <h1>¡Identidad Verificada!</h1>
+            <p>Tu cuenta ha sido validada exitosamente en Politik. Ya puedes volver a la aplicación y continuar con tu gestión.</p>
+            <button class="button" onclick="openApp()">Abrir Aplicación</button>
+        </div>
+
+        <!-- ESTADO DE ERROR -->
+        <div id="error" class="state-container hidden">
+            <div class="icon error">
+                <svg fill="#DC2626" viewBox="0 0 24 24"> <!-- Error Color -->
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                </svg>
+            </div>
+            <h1>Error de Verificación</h1>
+            <p id="error-message">El enlace de verificación es inválido o ha expirado. Por favor, solicita uno nuevo desde la app.</p>
+            <button class="button" onclick="openApp()" style="background: #E2E8F0; color: #0F172A; box-shadow: none;">Volver a la app</button>
+        </div>
+    </div>
+
+    <script>
+        async function verifyEmail() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+            const secret = urlParams.get('secret');
+
+            if (!userId || !secret) {
+                showError('Parámetros incompletos en la URL de verificación.');
+                return;
+            }
+
+            try {
+                // 1. Inicializar Appwrite (Sustituimos el tuyo real de appwrite)
+                const client = new Appwrite.Client()
+                    .setEndpoint('https://cloud.appwrite.io/v1')
+                    .setProject('6a3d9de20033b2990675'); // Este es tu PROJECT ID, lo saqué de tu código
+
+                const account = new Appwrite.Account(client);
+
+                // 2. Ejecutar la validación con el SDK
+                await account.updateVerification(userId, secret);
+                
+                // Si llegamos aquí, fue exitoso!
+                showSuccess();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function showSuccess() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('success').classList.remove('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error').classList.remove('hidden');
+        }
+
+        function openApp() {
+            // Deep link nativo a la aplicación de Politik
+            // Android intentará abrir la app que tenga registrado el esquema 'politik://'
+            window.location.href = 'politik://verify';
+            
+            // Fallback en caso de que estén en PC o no tengan la app instalada
+            setTimeout(() => {
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                if (!isMobile) {
+                    alert('Parece que estás en una PC. Por favor abre la aplicación Politik en tu teléfono.');
+                }
+            }, 1500);
+        }
+
+        // Iniciar la magia apenas cargue la página
+        window.onload = () => {
+            // Un pequeño timeout para que el loader de la animación se aprecie un segundo
+            setTimeout(verifyEmail, 800);
+        };
+    </script>
+</body>
+</html>

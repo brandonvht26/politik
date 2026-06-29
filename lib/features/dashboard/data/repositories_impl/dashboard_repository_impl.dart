@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:flutter/foundation.dart';
@@ -292,28 +294,57 @@ class DashboardRepositoryImpl implements DashboardRepository {
   /// Hack necesario porque el Server SDK (users.create) no dispara correos de verificación automáticos.
   Future<void> _sendVerificationEmail(String email, String password) async {
     try {
-      // Cliente aislado sin afectar las SharedPreferences de la sesión del administrador
-      final tempClient = Client()
-          .setEndpoint(_appwrite.endpoint)
-          .setProject(_appwrite.projectId)
-          .setSelfSigned(status: true);
+      // Usamos dart:io puro para AISLAR completamente la petición HTTP de las SharedPreferences 
+      // del Flutter SDK. Así evitamos el error 401 "user_session_already_exists" y no destruimos
+      // la sesión global de administrador.
+      final endpoint = _appwrite.endpoint;
+      final projectId = _appwrite.projectId;
 
-      final tempAccount = Account(tempClient);
+      final httpClient = HttpClient();
+      httpClient.badCertificateCallback = ((X509Certificate cert, String host, int port) => true);
+
+      // 1. Iniciar sesión efímera usando REST puro
+      final sessionUrl = Uri.parse('$endpoint/account/sessions/email');
+      final sessionReq = await httpClient.postUrl(sessionUrl);
+      sessionReq.headers.set('X-Appwrite-Project', projectId);
+      sessionReq.headers.set('Content-Type', 'application/json');
+      sessionReq.add(utf8.encode(jsonEncode({
+        'email': email, 
+        'password': password
+      })));
       
-      // 1. Iniciar sesión efímera (se guarda en memoria para tempClient)
-      await tempAccount.createEmailPasswordSession(
-        email: email, 
-        password: password,
-      );
+      final sessionRes = await sessionReq.close();
+      if (sessionRes.statusCode != 201) {
+        throw Exception('Appwrite devolvió status ${sessionRes.statusCode} al crear sesión REST.');
+      }
 
-      // 2. Solicitar verificación (Requiere esquema HTTP/HTTPS obligatorio en Appwrite Cloud)
-      // La auditoría OWASP recomendó un deep link directo, pero por diseño, Appwrite Cloud
-      // rechaza esquemas nativos (politik://) con un error 400 ya que los clientes de correo (Gmail)
-      // los bloquean. Usamos la plataforma Web registrada para el redireccionamiento.
-      await tempAccount.createVerification(url: 'https://politik-app.com/verify');
+      // Extraer Cookie de la respuesta (Session Secret)
+      final setCookie = sessionRes.headers['set-cookie'];
+      String? fallbackCookie;
+      if (setCookie != null && setCookie.isNotEmpty) {
+        fallbackCookie = setCookie.join(';');
+      }
 
-      // IMPORTANTE: NO usamos deleteSession() porque la implementación interna de
-      // flutter_appwrite borra la cache local completa, destruyendo la sesión del Provincial.
+      // 2. Solicitar verificación usando REST puro
+      final verifyUrl = Uri.parse('$endpoint/account/verification');
+      final verifyReq = await httpClient.postUrl(verifyUrl);
+      verifyReq.headers.set('X-Appwrite-Project', projectId);
+      verifyReq.headers.set('Content-Type', 'application/json');
+      if (fallbackCookie != null) {
+        verifyReq.headers.set('Cookie', fallbackCookie);
+        verifyReq.headers.set('X-Fallback-Cookies', fallbackCookie);
+      }
+      
+      // La auditoría recomendaba politik://verify pero Appwrite Cloud rechaza esquemas nativos.
+      verifyReq.add(utf8.encode(jsonEncode({
+        'url': 'https://politik-app.com/verify'
+      })));
+      
+      final verifyRes = await verifyReq.close();
+      if (verifyRes.statusCode != 201) {
+        throw Exception('Appwrite devolvió status ${verifyRes.statusCode} al pedir verificación.');
+      }
+
     } catch (e, stackTrace) {
       debugPrintStack(stackTrace: stackTrace, label: 'Fallo crítico al enviar correo de verificación');
       throw Exception('No se pudo enviar el correo de verificación. El usuario ha sido creado pero requiere verificación manual. Error: $e');
