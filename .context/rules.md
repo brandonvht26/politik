@@ -33,7 +33,8 @@
 - **Seguridad de Contraseñas:** Todo usuario nuevo inicia con la clave `Ecuador2026`. El sistema debe forzar al usuario a cambiarla en su primer inicio de sesión.
 - **Flujo de Veedor:** 
   - 2 actas por mesa (Alcalde y Prefecto). 
-  - La suma de votos (candidatos + nulos + blancos) **nunca puede ser mayor** al total de sufragantes.
+  - La suma de votos (candidatos + nulos + blancos) **debe ser exactamente igual** al total de sufragantes. El cálculo debe ser rígido y estricto.
+  - Los formularios de nombres y apellidos deben bloquear el ingreso de números mediante `Regex`.
   - El GPS y la nitidez de la foto son obligatorios y bloqueantes.
   - Flujo Offline (Hive) con sincronización en segundo plano.
 

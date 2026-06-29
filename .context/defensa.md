@@ -297,11 +297,11 @@ Utilizamos el paquete [`image_blur_detection`](https://pub.dev/packages/image_bl
 3. **Varianza** — Mide cuán dispersos están esos valores de borde.
    - **Varianza ALTA** → muchos bordes definidos → imagen nítida ✅
    - **Varianza BAJA** → bordes difusos → imagen borrosa ❌
-4. **Threshold** — El paquete compara la varianza contra un umbral configurado (`QualityConfig.photoCapture`).
+4. **Threshold** — El paquete compara la varianza contra un umbral configurado (`QualityConfig.photoCapture`). En esta app se ha ajustado a `140.0`, junto con una compresión a `1920x1920` (Calidad 80%), previniendo errores OOM en dispositivos de gama baja pero garantizando que el acta sea legible para el TCE.
 
 ```
 Imagen nítida  → Varianza ALTA (ej. 350) → ✅ Aceptada
-Imagen borrosa → Varianza BAJA (ej. 25)  → ❌ Rechazada
+Imagen borrosa → Varianza BAJA (ej. 130)  → ❌ Rechazada
 ```
 
 ### 4.3 Implementación en la app
@@ -345,6 +345,7 @@ return LocationEntity(
 **¿Por qué es infalible para el veedor?**
 - Si el GPS está apagado, la app informa inmediatamente y no deja guardar el acta sin coordenadas.
 - Si el permiso es denegado, se muestra un mensaje claro que guía al usuario a ajustes.
+- **Validación Nativa:** Se configuraron explícitamente `ACCESS_FINE_LOCATION` y `ACCESS_COARSE_LOCATION` en el `AndroidManifest.xml` previniendo crasheos de la app por bloqueos de seguridad del Sistema Operativo al usar `geolocator`.
 - Si todo está correcto, se capturan las coordenadas exactas del recinto y se guardan en el modelo local, luego se sincronizan con Appwrite en el campo `latitud` / `longitud`.
 
 Esto convierte al veedor en un testigo georreferenciado: no solo dice que estuvo en el recinto, sino que la app registra dónde exactamente tomó la foto.
@@ -412,9 +413,9 @@ Nuestra app está orientada al **delegado de partido / veedor de mesa**, quien:
 │                                                                     │
 │  FLUJO DEL VEEDOR:                                                  │
 │  1. Ingresa votos (5 orgs + blancos + nulos)                        │
-│  2. Valida suma matemática estricta (== sufragantes)                │
-│  3. Toma foto → valida nitidez (Varianza del Laplaciano)            │
-│  4. Captura GPS                                                     │
+│  2. Valida suma matemática EXACTA (suma == sufragantes)             │
+│  3. Toma foto → valida nitidez (Umbral 140.0)                       │
+│  4. Captura GPS (Permisos Manifiesto validados)                     │
 │  5. Guarda acta en Hive con isSynced = false                        │
 │  6. Al recuperar red, SyncService sube foto + documento             │
 │  7. Marca acta como isSynced = true                                 │
@@ -436,8 +437,10 @@ Nuestra app está orientada al **delegado de partido / veedor de mesa**, quien:
 - [ ] Mostrar la validación de cédula con Módulo 10.
 - [ ] Demostrar la creación jerárquica de usuarios (Provincial → Recinto → Veedor) con el hack de sesión efímera para enviar correos de verificación nativos.
 - [ ] Demostrar el funcionamiento del Deep Linking abriendo la app desde un enlace.
-- [ ] Explicar la Estrategia de Compensación Visual (Alertas y Banners) ante las limitaciones del Free Tier de Appwrite.
+- [ ] Explicar la Estrategia de Compensación Visual (Alertas y Banners) ante las limitaciones del Free Tier de Appwrite y el bypass con Netlify para la sesión.
 - [ ] Mostrar el validador estricto de contraseñas y el medidor de fortaleza visual.
+- [ ] Exhibir la Estética Premium "Metallic UI" con gradientes personalizados (`AppColors.metallicGradient`) e iconos dorados.
+- [ ] Mostrar el blindaje de ingreso en los formularios mediante `Regex` (solo letras para nombres).
 
 ---
 
@@ -476,6 +479,6 @@ dev_dependencies:
 
 ---
 
-> **Documento preparado por:** OpenCode (Kimi k2.7-code)  
-> **Fecha:** 2026-06-26  
+> **Documento preparado por:** OpenCode & Antigravity IDE
+> **Fecha:** 2026-06-28
 > **Proyecto:** Politik — Veeduría Electoral Offline-First con Appwrite
