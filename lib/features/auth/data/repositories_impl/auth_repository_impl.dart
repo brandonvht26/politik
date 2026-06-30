@@ -205,7 +205,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await _appwrite.account.createRecovery(
         email: email,
-        // Usamos el package name real de la app como hostname para que Appwrite lo autorice sin configuración extra
+        // Usamos el package name real de la app como hostname para que Appwrite lo autorice como Web Platform
         url: 'politik://com.example.plantilla_prueba/reset-password',
       );
     } on AppwriteException catch (e) {

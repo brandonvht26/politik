@@ -67,7 +67,7 @@ class DeepLinkService {
           }
         }
       }
-    } else if (uri.scheme == 'politik' && uri.host == 'com.example.plantilla_prueba' && uri.path == '/reset-password') {
+    } else if (uri.queryParameters['action'] == 'reset' || uri.path == '/reset-password') {
       final userId = uri.queryParameters['userId'];
       final secret = uri.queryParameters['secret'];
 
