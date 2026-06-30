@@ -45,8 +45,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="politik" android:host="verify" />
-                <!-- Clever trick: Use politik:// scheme with the already registered Netlify domain as hostname so Appwrite Cloud doesn't block it! -->
-                <data android:scheme="politik" android:host="politik-app.netlify.app" android:path="/reset-password" />
+                <!-- Usamos el package name real como hostname para engañar a Appwrite y que lo autorice nativamente -->
+                <data android:scheme="politik" android:host="com.example.plantilla_prueba" android:path="/reset-password" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
