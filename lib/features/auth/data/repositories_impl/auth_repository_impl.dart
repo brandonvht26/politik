@@ -205,8 +205,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await _appwrite.account.createRecovery(
         email: email,
-        // Usamos el package name real de la app como hostname para que Appwrite lo autorice como Web Platform
-        url: 'politik://com.example.plantilla_prueba/reset-password',
+        // Usamos la raíz del sitio web con parámetro action=reset para evitar el error 404
+        url: 'https://politik-app.netlify.app/?action=reset',
       );
     } on AppwriteException catch (e) {
       throw Exception('Error al solicitar recuperación: ${e.message}');

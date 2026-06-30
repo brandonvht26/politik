@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/auth_bloc.dart';
@@ -151,12 +153,19 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                           SizedBox(
                             width: double.infinity,
                             child: FilledButton.icon(
-                              onPressed: () {
+                              onPressed: () async {
+                                if (kIsWeb) {
+                                  final uri = Uri.parse('politik://');
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri);
+                                    return;
+                                  }
+                                }
                                 // Pop untill the root route (LoginPage)
                                 Navigator.of(context).popUntil((route) => route.isFirst);
                               },
                               icon: const Icon(Icons.login),
-                              label: const Text('Ir a Iniciar Sesión'),
+                              label: const Text('Ir a la aplicación'),
                             ),
                           ),
                         ],
