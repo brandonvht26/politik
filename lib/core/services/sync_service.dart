@@ -97,14 +97,19 @@ class SyncService {
     try {
       debugPrint('Sincronizando acta ${acta.uuid}...');
 
-      // 1. Upload the image to Appwrite Storage.
-      final uploadedFile = await _appwrite.storage.createFile(
-        bucketId: _appwrite.storageBucketId,
-        fileId: ID.unique(),
-        file: InputFile.fromPath(path: acta.imageLocalPath),
-      );
+      String imageId;
 
-      final imageId = uploadedFile.$id;
+      // 1. Upload the image only if we don't have an existing imageId
+      if (acta.imageId != null && acta.imageId!.isNotEmpty) {
+        imageId = acta.imageId!;
+      } else {
+        final uploadedFile = await _appwrite.storage.createFile(
+          bucketId: _appwrite.storageBucketId,
+          fileId: ID.unique(),
+          file: InputFile.fromPath(path: acta.imageLocalPath),
+        );
+        imageId = uploadedFile.$id;
+      }
 
       // 2. Serialize votes to JSON as defined in database.md.
       final votosMap = <String, int>{};

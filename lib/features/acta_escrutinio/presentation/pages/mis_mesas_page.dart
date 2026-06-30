@@ -9,7 +9,8 @@ import '../../domain/entities/acta_escrutinio_local_entity.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/services/local_storage_service.dart';
-import '../../../../core/presentation/widgets/metallic_card.dart';
+import '../../../../core/presentation/widgets/premium_card.dart';
+import '../../../../core/presentation/widgets/premium_scaffold.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
@@ -25,104 +26,93 @@ class MisMesasPage extends StatelessWidget {
     final recintoId = session?.recintoId ?? 'No asignado';
     final mesaId = session?.mesaId ?? 'No asignada';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mis Mesas'),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.metallicGradient,
-          ),
+    return PremiumScaffold(
+      title: 'Mis Mesas',
+      subtitle: 'Registra y corrige actas de escrutinio',
+      showBackButton: false,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.logout, color: Colors.white),
+          tooltip: 'Cerrar sesión',
+          onPressed: () => context.read<AuthBloc>().add(LogoutRequested()),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Cerrar sesión',
-            onPressed: () => context.read<AuthBloc>().add(LogoutRequested()),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              MetallicCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.table_bar_rounded, size: 28, color: AppColors.accent),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Mesa N°$mesaId',
-                            style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white),
+      ],
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PremiumCard(
+              hasDecoration: true,
+              decorationColor: AppColors.primary.withOpacity(0.05),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const CircleAvatar(
+                          backgroundColor: AppColors.primary,
+                          child: Icon(Icons.table_bar_rounded, size: 24, color: Colors.white),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Mesa N°$mesaId',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            color: theme.colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Recinto: $recintoId',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.white70,
-                            ),
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Recinto: $recintoId',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.black54,
+                          ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Registrar Acta de Escrutinio',
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: AppColors.metallicGradient,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.accent, width: 1.5),
-                      ),
-                      child: FilledButton.icon(
-                        onPressed: () => _navegarActa(context, 'alcalde', recintoId, mesaId),
-                        icon: const Icon(Icons.how_to_vote, color: Colors.white),
-                        label: const Text('Acta Alcalde', style: TextStyle(color: Colors.white)),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                        ),
-                      ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              'Registrar Acta de Escrutinio',
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => _navegarActa(context, 'alcalde', recintoId, mesaId),
+                    icon: const Icon(Icons.how_to_vote),
+                    label: const Text('Alcalde'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: AppColors.metallicGradient,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.accent, width: 1.5),
-                      ),
-                      child: FilledButton.icon(
-                        onPressed: () => _navegarActa(context, 'prefecto', recintoId, mesaId),
-                        icon: const Icon(Icons.how_to_vote_outlined, color: Colors.white),
-                        label: const Text('Acta Prefecto', style: TextStyle(color: Colors.white)),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                        ),
-                      ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => _navegarActa(context, 'prefecto', recintoId, mesaId),
+                    icon: const Icon(Icons.how_to_vote),
+                    label: const Text('Prefecto'),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: AppColors.secondary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -180,7 +170,7 @@ class MisMesasPage extends StatelessWidget {
       if (existingData != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Esta acta ya fue enviada. Modo de Solo Lectura.'),
+            content: Text('Esta acta ya fue enviada. Puedes modificarla si es necesario.'),
             backgroundColor: AppColors.accent,
           ),
         );
@@ -191,7 +181,9 @@ class MisMesasPage extends StatelessWidget {
         MaterialPageRoute(
           builder: (_) => ActaFormPage(
             tipo: tipo,
-            isReadOnly: existingData != null,
+            recintoId: recintoId,
+            mesaId: mesaId,
+            isReadOnly: false,
             initialData: existingData,
           ),
         ),

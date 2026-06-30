@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/utils/cedula_validator.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/presentation/widgets/premium_card.dart';
+import '../../../../core/presentation/widgets/premium_scaffold.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -42,30 +44,15 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.metallicGradient,
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.accent, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Form(
+    return PremiumScaffold(
+      title: 'Bienvenido',
+      subtitle: 'Sistema de Control de Actas',
+      showBackButton: false,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: PremiumCard(
+          padding: const EdgeInsets.all(24),
+          child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,

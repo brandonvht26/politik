@@ -3,16 +3,23 @@ import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/voto_partido_local_entity.dart';
+import '../bloc/acta_bloc.dart';
+import '../bloc/acta_event.dart';
 import 'camera_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ActaFormPage extends StatefulWidget {
   final String tipo;
   final bool isReadOnly;
   final Map<String, dynamic>? initialData;
+  final String recintoId;
+  final String mesaId;
 
   const ActaFormPage({
     super.key,
     required this.tipo,
+    required this.recintoId,
+    required this.mesaId,
     this.isReadOnly = false,
     this.initialData,
   });
@@ -189,47 +196,24 @@ class _ActaFormPageState extends State<ActaFormPage> {
     final theme = Theme.of(context);
     final tipoLabel = widget.tipo == 'alcalde' ? 'Alcalde' : 'Prefecto';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Acta $tipoLabel'),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.metallicGradient,
-          ),
-        ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.metallicGradient,
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.accent, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'Votos por Organización Política',
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    ..._organizaciones.map((org) => Padding(
+    return PremiumScaffold(
+      title: 'Acta $tipoLabel',
+      subtitle: 'Ingresa los resultados cuidadosamente',
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: PremiumCard(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Votos por Organización Política',
+                  style: theme.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                ..._organizaciones.map((org) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: TextFormField(
                             readOnly: widget.isReadOnly,
@@ -324,13 +308,26 @@ class _ActaFormPageState extends State<ActaFormPage> {
                       ),
                     ],
                     const SizedBox(height: 24),
+                    if (widget.initialData != null && !widget.isReadOnly) ...[
+                      FilledButton.icon(
+                        onPressed: _guardarCambios,
+                        icon: const Icon(Icons.save),
+                        label: const Text('Actualizar Acta (Misma Foto)'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     if (!widget.isReadOnly)
                       FilledButton.icon(
                         onPressed: _siguiente,
-                        icon: const Icon(Icons.arrow_forward),
-                        label: const Text('Siguiente: Capturar Foto'),
+                        icon: const Icon(Icons.camera_alt),
+                        label: Text(widget.initialData != null ? 'Tomar Nueva Foto' : 'Siguiente: Capturar Foto'),
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: widget.initialData != null ? Colors.grey.shade700 : AppColors.primary,
                         ),
                       ),
                   ],
@@ -341,5 +338,54 @@ class _ActaFormPageState extends State<ActaFormPage> {
         ),
       ),
     );
+  }
+
+  void _guardarCambios() {
+    if (!_formKey.currentState!.validate()) {
+      setState(() => _errorMessage = 'Por favor, corrija los errores del formulario.');
+      return;
+    }
+    
+    final sumaVotos = _organizaciones.fold<int>(
+      0,
+      (prev, org) => prev + _parseInt(_controllers[org]!.text),
+    ) + _parseInt(_blancosCtrl.text) + _parseInt(_nulosCtrl.text);
+    
+    if (sumaVotos != _parseInt(_sufragantesCtrl.text)) {
+      setState(() {
+        _errorMessage = 'La suma total ($sumaVotos) no coincide con el Total de Sufragantes (${_parseInt(_sufragantesCtrl.text)}).';
+      });
+      return;
+    }
+    
+    setState(() => _errorMessage = null);
+
+    final votosPartidos = _organizaciones
+        .map((org) => VotoPartidoLocalEntity(
+              nombreOrganizacion: org,
+              cantidadVotos: _parseInt(_controllers[org]!.text),
+            ))
+        .toList();
+
+    context.read<ActaBloc>().add(
+          SaveActaRequested(
+            recintoId: widget.recintoId,
+            mesaId: widget.mesaId,
+            tipo: widget.tipo,
+            votosPartidos: votosPartidos,
+            votosBlancos: _parseInt(_blancosCtrl.text),
+            votosNulos: _parseInt(_nulosCtrl.text),
+            totalSufragantes: _parseInt(_sufragantesCtrl.text),
+            imageLocalPath: '', // No local path because we are just updating text and keeping the image_id
+            imageId: widget.initialData?['image_id'],
+            latitud: (widget.initialData?['latitud'] as num?)?.toDouble(),
+            longitud: (widget.initialData?['longitud'] as num?)?.toDouble(),
+          ),
+        );
+        
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Guardando cambios...')),
+    );
+    Navigator.pop(context);
   }
 }

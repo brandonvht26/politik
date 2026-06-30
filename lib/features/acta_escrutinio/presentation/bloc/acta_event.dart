@@ -22,6 +22,9 @@ class SaveActaRequested extends ActaEvent {
   final int votosNulos;
   final int totalSufragantes;
   final String imageLocalPath;
+  final String? imageId;
+  final double? latitud;
+  final double? longitud;
 
   const SaveActaRequested({
     required this.recintoId,
@@ -32,6 +35,9 @@ class SaveActaRequested extends ActaEvent {
     required this.votosNulos,
     required this.totalSufragantes,
     required this.imageLocalPath,
+    this.imageId,
+    this.latitud,
+    this.longitud,
   });
 
   @override

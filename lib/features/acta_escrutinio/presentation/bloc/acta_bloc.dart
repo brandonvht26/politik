@@ -58,7 +58,21 @@ class ActaBloc extends Bloc<ActaEvent, ActaState> {
     emit(ActaLoading());
 
     try {
-      final location = await _getCurrentLocation();
+      final latitud = event.latitud;
+      final longitud = event.longitud;
+      
+      double finalLat = 0.0;
+      double finalLng = 0.0;
+      
+      if (latitud != null && longitud != null) {
+        finalLat = latitud;
+        finalLng = longitud;
+      } else {
+        final location = await _getCurrentLocation();
+        finalLat = location.latitude;
+        finalLng = location.longitude;
+      }
+
       final uuid =
           '${event.recintoId}_${event.mesaId}_${event.tipo}_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -71,9 +85,10 @@ class ActaBloc extends Bloc<ActaEvent, ActaState> {
         votosBlancos: event.votosBlancos,
         votosNulos: event.votosNulos,
         totalSufragantes: event.totalSufragantes,
-        latitud: location.latitude,
-        longitud: location.longitude,
+        latitud: finalLat,
+        longitud: finalLng,
         imageLocalPath: event.imageLocalPath,
+        imageId: event.imageId,
         isSynced: false,
         createdAt: DateTime.now(),
       );

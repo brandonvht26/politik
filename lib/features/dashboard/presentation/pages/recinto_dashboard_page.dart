@@ -4,7 +4,8 @@ import 'package:appwrite/models.dart' as appwrite_models;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/presentation/widgets/metallic_card.dart';
+import '../../../../core/presentation/widgets/premium_card.dart';
+import '../../../../core/presentation/widgets/premium_scaffold.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/services/local_storage_service.dart';
 import '../../../../core/services/appwrite_service.dart';
@@ -70,24 +71,18 @@ class _RecintoDashboardPageState extends State<RecintoDashboardPage> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Coordinación de Recinto'),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.metallicGradient,
-          ),
+    return PremiumScaffold(
+      title: 'Coordinación de Recinto',
+      subtitle: 'Administración de veedores y actas',
+      showBackButton: false,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.logout, color: Colors.white),
+          tooltip: 'Cerrar sesión',
+          onPressed: _logout,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Cerrar sesión',
-            onPressed: _logout,
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: BlocConsumer<RecintoBloc, RecintoState>(
+      ],
+      body: BlocConsumer<RecintoBloc, RecintoState>(
           listener: (context, state) {
             if (state is RecintoError) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -383,25 +378,27 @@ class _VeedoresList extends StatelessWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final v = veedores[index];
-        return MetallicCard(
+        return PremiumCard(
+          hasDecoration: true,
+          decorationColor: AppColors.secondary.withOpacity(0.1),
           child: ListTile(
             leading: const CircleAvatar(
-              backgroundColor: Colors.transparent,
-              child: Icon(Icons.person_pin_rounded, size: 32),
+              backgroundColor: AppColors.secondary,
+              child: Icon(Icons.person_pin_rounded, color: Colors.white, size: 24),
             ),
-            title: Text(v.nombreCompleto),
-            subtitle: Text('Cédula: ${v.cedula}', style: const TextStyle(color: Colors.white70)),
+            title: Text(v.nombreCompleto, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('Cédula: ${v.cedula}', style: const TextStyle(color: Colors.black54)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Chip(
                   label: Text('Mesa ${v.mesaId ?? "-"}'),
-                  backgroundColor: Colors.white24,
-                  labelStyle: const TextStyle(color: Colors.white),
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  labelStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                   side: BorderSide.none,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.edit),
+                  icon: const Icon(Icons.edit, color: AppColors.primary),
                   tooltip: 'Reasignar mesa',
                   onPressed: () => _showReassignDialog(context, v),
                 ),
@@ -502,12 +499,17 @@ class _ActasRecibidasListState extends State<_ActasRecibidasList> {
           actData['votos_partidos'] = jsonDecode(actData['votos_partidos']);
         }
         
-        return Card(
+        return PremiumCard(
           margin: const EdgeInsets.only(bottom: 12),
+          hasDecoration: true,
+          decorationColor: AppColors.accent.withOpacity(0.1),
           child: ListTile(
-            leading: const Icon(Icons.file_copy, color: AppColors.accent),
-            title: Text('Acta ${data['dignidad'].toString().toUpperCase()} - JRV N°${data['id_jrv']}'),
-            subtitle: Text('Total Votos: ${data['total_sufragantes']}'),
+            leading: const CircleAvatar(
+              backgroundColor: AppColors.accent,
+              child: Icon(Icons.file_copy, color: Colors.white, size: 24),
+            ),
+            title: Text('Acta ${data['dignidad'].toString().toUpperCase()} - JRV N°${data['id_jrv']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('Total Votos: ${data['total_sufragantes']}', style: const TextStyle(color: Colors.black54)),
             trailing: IconButton(
               icon: const Icon(Icons.edit, color: AppColors.primary),
               tooltip: 'Corregir Acta',
@@ -517,6 +519,8 @@ class _ActasRecibidasListState extends State<_ActasRecibidasList> {
                   MaterialPageRoute(
                     builder: (_) => ActaFormPage(
                       tipo: data['dignidad'],
+                      recintoId: data['recinto_id'] ?? widget.recintoId,
+                      mesaId: data['id_jrv'].toString(),
                       isReadOnly: false,
                       initialData: actData,
                     ),

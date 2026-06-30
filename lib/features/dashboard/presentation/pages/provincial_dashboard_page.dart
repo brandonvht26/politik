@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../../../../core/presentation/widgets/metallic_card.dart';
+import '../../../../core/presentation/widgets/premium_card.dart';
+import '../../../../core/presentation/widgets/premium_scaffold.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,6 +14,7 @@ import '../bloc/provincial_event.dart';
 import '../bloc/provincial_state.dart';
 import '../widgets/create_coordinador_recinto_dialog.dart';
 import '../widgets/create_recinto_dialog.dart';
+import 'recinto_detail_admin_page.dart';
 
 class ProvincialDashboardPage extends StatefulWidget {
   const ProvincialDashboardPage({super.key});
@@ -40,25 +42,19 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Panel Provincial'),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.metallicGradient,
-          ),
+    
+    return PremiumScaffold(
+      title: 'Panel Provincial',
+      subtitle: 'Visión general de las elecciones',
+      showBackButton: false,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.logout, color: Colors.white),
+          tooltip: 'Cerrar sesión',
+          onPressed: _logout,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Cerrar sesión',
-            onPressed: _logout,
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: BlocConsumer<ProvincialBloc, ProvincialState>(
+      ],
+      body: BlocConsumer<ProvincialBloc, ProvincialState>(
           listener: (context, state) {
             if (state is ProvincialError || state is ProvincialActionError) {
               final message = state is ProvincialError 
@@ -71,7 +67,7 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                 ),
               );
             } else if (state is ProvincialActionSuccess) {
-              if (state.message.contains('creado')) {
+              if (state.message.contains('Coordinador') && state.message.contains('creado')) {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
@@ -159,7 +155,10 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                                     count: state.recintos.length,
                                   ),
                                   const SizedBox(height: 8),
-                                  _RecintosList(recintos: state.recintos),
+                                  _RecintosList(
+                                    recintos: state.recintos,
+                                    actas: state.actas,
+                                  ),
                                   const SizedBox(height: 12),
                                   OutlinedButton.icon(
                                     onPressed: () => _showCreateRecintoDialog(context),
@@ -281,8 +280,12 @@ class _SectionHeader extends StatelessWidget {
 
 class _RecintosList extends StatelessWidget {
   final List<RecintoEntity> recintos;
+  final List<Map<String, dynamic>> actas;
 
-  const _RecintosList({required this.recintos});
+  const _RecintosList({
+    required this.recintos,
+    required this.actas,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -297,18 +300,39 @@ class _RecintosList extends StatelessWidget {
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final r = recintos[index];
-        return MetallicCard(
+        final actasDelRecinto = actas.where((a) => a['recinto_id'] == r.id).toList();
+        final mesasConActa = actasDelRecinto.map((a) => a['id_jrv']).toSet().length;
+        
+        return PremiumCard(
+          hasDecoration: true,
+          decorationColor: AppColors.secondary.withOpacity(0.1),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RecintoDetailAdminPage(
+                  recinto: r,
+                  actas: actasDelRecinto,
+                ),
+              ),
+            );
+          },
           child: ListTile(
             leading: const CircleAvatar(
-              backgroundColor: Colors.transparent,
-              child: Icon(Icons.account_balance_rounded, size: 32),
+              backgroundColor: AppColors.primary,
+              child: Icon(Icons.account_balance_rounded, color: Colors.white, size: 24),
             ),
-            title: Text(r.nombre),
-            subtitle: Text('${r.canton} - ${r.parroquia}', style: const TextStyle(color: Colors.white70)),
+            title: Text(r.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('${r.canton} - ${r.parroquia}', style: const TextStyle(color: Colors.black54)),
             trailing: Chip(
-              label: Text('${r.numMesas} mesas'),
-              backgroundColor: Colors.white24,
-              labelStyle: const TextStyle(color: Colors.white),
+              label: Text('$mesasConActa / ${r.numMesas} mesas listas'),
+              backgroundColor: mesasConActa == r.numMesas && r.numMesas > 0 
+                  ? Colors.green.withOpacity(0.1)
+                  : Colors.grey.withOpacity(0.1),
+              labelStyle: TextStyle(
+                color: mesasConActa == r.numMesas && r.numMesas > 0 ? Colors.green : Colors.black87,
+                fontWeight: FontWeight.bold,
+              ),
               side: BorderSide.none,
             ),
           ),
@@ -353,18 +377,20 @@ class _CoordinadoresList extends StatelessWidget {
           ),
         );
 
-        return MetallicCard(
+        return PremiumCard(
+          hasDecoration: true,
+          decorationColor: AppColors.accent.withOpacity(0.1),
           child: ListTile(
             leading: const CircleAvatar(
-              backgroundColor: Colors.transparent,
-              child: Icon(Icons.supervisor_account_rounded, size: 32),
+              backgroundColor: AppColors.accent,
+              child: Icon(Icons.supervisor_account_rounded, color: Colors.white, size: 24),
             ),
-            title: Text(c.nombreCompleto),
+            title: Text(c.nombreCompleto, style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Cédula: ${c.cedula}', style: const TextStyle(color: Colors.white70)),
-                Text('Recinto: ${recinto.nombre}', style: const TextStyle(color: Colors.white70)),
+                Text('Cédula: ${c.cedula}', style: const TextStyle(color: Colors.black54)),
+                Text('Recinto: ${recinto.nombre}', style: const TextStyle(color: Colors.black54)),
               ],
             ),
             isThreeLine: true,
@@ -509,11 +535,11 @@ class _ResultadosTab extends StatelessWidget {
     final sortedVotos = votos.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return PremiumCard(
+      hasDecoration: true,
+      decorationColor: AppColors.primary.withOpacity(0.05),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
