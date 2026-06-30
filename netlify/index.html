@@ -190,8 +190,29 @@
     <script>
         async function verifyEmail() {
             const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
             const userId = urlParams.get('userId');
             const secret = urlParams.get('secret');
+
+            // Si es un enlace de recuperación de contraseña, redirigimos a la app nativa
+            if (action === 'reset') {
+                document.getElementById('loading').innerHTML = `
+                    <div class="icon success" style="background-color: #3b82f6;">
+                        <svg fill="#1E3A8A" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                        </svg>
+                    </div>
+                    <h1>Redirigiendo a Politik...</h1>
+                    <p>Serás llevado a la aplicación para restablecer tu contraseña.</p>
+                    <button class="button" onclick="window.location.href = 'politik://com.example.plantilla_prueba/reset-password?userId=' + userId + '&secret=' + secret" style="margin-top: 16px;">Abrir Aplicación</button>
+                `;
+                
+                // Intentar abrir la app automáticamente
+                setTimeout(() => {
+                    window.location.href = 'politik://com.example.plantilla_prueba/reset-password?userId=' + userId + '&secret=' + secret;
+                }, 500);
+                return;
+            }
 
             if (!userId || !secret) {
                 showError('Parámetros incompletos en la URL de verificación.');
