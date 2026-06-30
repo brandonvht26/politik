@@ -19,6 +19,13 @@ class _RecoveryRequestPageState extends State<RecoveryRequestPage> {
   final _cedulaCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Reiniciar el estado del AuthBloc para que no muestre "Enviado" por defecto
+    context.read<AuthBloc>().add(AuthStarted());
+  }
+
+  @override
   void dispose() {
     _cedulaCtrl.dispose();
     super.dispose();
@@ -105,7 +112,10 @@ class _RecoveryRequestPageState extends State<RecoveryRequestPage> {
                           SizedBox(
                             width: double.infinity,
                             child: FilledButton(
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () {
+                                context.read<AuthBloc>().add(AuthStarted());
+                                Navigator.pop(context);
+                              },
                               child: const Text('Volver al Login'),
                             ),
                           ),
