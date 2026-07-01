@@ -133,6 +133,9 @@ class _CreateRecintoDialogState extends State<CreateRecintoDialog> {
                     if (value == null || value <= 0) {
                       return 'Debe ser un número mayor a 0';
                     }
+                    if (value > 100) {
+                      return 'El máximo permitido es 100 mesas';
+                    }
                     return null;
                   },
                   onFieldSubmitted: (_) => _submit(),

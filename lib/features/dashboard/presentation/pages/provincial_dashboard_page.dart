@@ -128,18 +128,21 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
 
     if (state is ProvincialDataLoaded) {
               return DefaultTabController(
-                length: 2,
+                length: 3,
                 child: Column(
                   children: [
-                    const TabBar(
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white70,
-                      indicatorColor: Colors.white,
-                      tabs: [
-                        Tab(text: 'Gestión', icon: Icon(Icons.admin_panel_settings)),
-                        Tab(text: 'Resultados', icon: Icon(Icons.bar_chart)),
-                      ],
-                    ),
+                      const TabBar(
+                        labelColor: Colors.white,
+                        unselectedLabelColor: Colors.white70,
+                        indicatorColor: Colors.white,
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.center,
+                        tabs: [
+                          Tab(text: 'Recintos', icon: Icon(Icons.place)),
+                          Tab(text: 'Coordinadores', icon: Icon(Icons.supervisor_account)),
+                          Tab(text: 'Resultados', icon: Icon(Icons.bar_chart)),
+                        ],
+                      ),
                     Expanded(
                       child: Container(
                         margin: const EdgeInsets.only(top: 8),
@@ -151,7 +154,7 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                           child: TabBarView(
                             children: [
-                          // Tab 1: Gestión (Recintos y Coordinadores)
+                          // Tab 1: Recintos
                           RefreshIndicator(
                             onRefresh: () async => _loadData(),
                             child: SingleChildScrollView(
@@ -162,7 +165,7 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                                 children: [
                                   _SectionHeader(
                                     icon: Icons.place,
-                                    title: 'Recintos',
+                                    title: 'Gestión de Recintos',
                                     count: state.recintos.length,
                                   ),
                                   const SizedBox(height: 8),
@@ -171,12 +174,29 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                                     actas: state.actas,
                                   ),
                                   const SizedBox(height: 12),
-                                  OutlinedButton.icon(
+                                  FilledButton.icon(
                                     onPressed: () => _showCreateRecintoDialog(context),
                                     icon: const Icon(Icons.add_location_alt),
                                     label: const Text('Nuevo Recinto'),
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      backgroundColor: AppColors.primary,
+                                    ),
                                   ),
-                                  const SizedBox(height: 32),
+                                ],
+                              ),
+                            ),
+                          ),
+                          
+                          // Tab 2: Coordinadores
+                          RefreshIndicator(
+                            onRefresh: () async => _loadData(),
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
                                   _SectionHeader(
                                     icon: Icons.supervisor_account,
                                     title: 'Coordinadores de Recinto',
@@ -188,7 +208,7 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                                     recintos: state.recintos,
                                   ),
                                   const SizedBox(height: 12),
-                                  OutlinedButton.icon(
+                                  FilledButton.icon(
                                     onPressed: () {
                                       final assignedRecintoIds = state.coordinadores.map((c) => c.recintoId).toSet();
                                       final availableRecintos = state.recintos.where((r) => !assignedRecintoIds.contains(r.id)).toList();
@@ -208,6 +228,10 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                                     },
                                     icon: const Icon(Icons.person_add),
                                     label: const Text('Nuevo Coordinador'),
+                                    style: FilledButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      backgroundColor: AppColors.secondary,
+                                    ),
                                   ),
                                 ],
                               ),
