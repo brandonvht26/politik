@@ -4,17 +4,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/utils/cedula_validator.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../domain/entities/user_profile_entity.dart';
 import '../bloc/recinto_bloc.dart';
 import '../bloc/recinto_event.dart';
 
 class CreateVeedorDialog extends StatefulWidget {
   final String recintoId;
   final int numMesas;
+  final List<UserProfileEntity> allVeedores;
 
   const CreateVeedorDialog({
     super.key,
     required this.recintoId,
     required this.numMesas,
+    required this.allVeedores,
   });
 
   @override
@@ -28,7 +31,7 @@ class _CreateVeedorDialogState extends State<CreateVeedorDialog> {
   final _apellidosCtrl = TextEditingController();
   final _telefonoCtrl = TextEditingController();
   final _correoCtrl = TextEditingController();
-  String? _mesaId;
+  final Set<String> _selectedMesas = {};
 
   @override
   void dispose() {
@@ -40,9 +43,26 @@ class _CreateVeedorDialogState extends State<CreateVeedorDialog> {
     super.dispose();
   }
 
+  Set<String> _getAssignedMesas() {
+    final assigned = <String>{};
+    for (final v in widget.allVeedores) {
+      if (v.mesaId != null && v.mesaId!.trim().isNotEmpty) {
+        assigned.addAll(v.mesaId!.split(',').map((e) => e.trim()));
+      }
+    }
+    return assigned;
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedMesas.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Debe seleccionar al menos una mesa')),
+      );
+      return;
+    }
 
+    final newMesaId = _selectedMesas.toList()..sort();
     context.read<RecintoBloc>().add(
           CreateVeedorRequested(
             cedula: _cedulaCtrl.text.trim(),
@@ -51,7 +71,7 @@ class _CreateVeedorDialogState extends State<CreateVeedorDialog> {
             telefono: _telefonoCtrl.text.trim(),
             correoReal: _correoCtrl.text.trim(),
             recintoId: widget.recintoId,
-            mesaId: _mesaId!,
+            mesaId: newMesaId.join(','),
           ),
         );
     Navigator.of(context).pop();
@@ -60,6 +80,7 @@ class _CreateVeedorDialogState extends State<CreateVeedorDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final assignedMesas = _getAssignedMesas();
 
     return AlertDialog(
       backgroundColor: AppColors.surface,
@@ -76,6 +97,7 @@ class _CreateVeedorDialogState extends State<CreateVeedorDialog> {
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 TextFormField(
                   controller: _cedulaCtrl,
@@ -157,26 +179,34 @@ class _CreateVeedorDialogState extends State<CreateVeedorDialog> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _mesaId,
-                  decoration: const InputDecoration(
-                    labelText: 'Mesa asignada',
-                    prefixIcon: Icon(Icons.table_bar),
-                  ),
-                  items: List.generate(
-                    widget.numMesas,
-                    (index) {
-                      final mesa = (index + 1).toString();
-                      return DropdownMenuItem(
-                        value: mesa,
-                        child: Text('Mesa $mesa'),
-                      );
-                    },
-                  ),
-                  onChanged: (value) => setState(() => _mesaId = value),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Seleccione una mesa' : null,
+                const SizedBox(height: 16),
+                const Text('Selecciona las mesas a asignar:'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 8.0,
+                  children: List.generate(widget.numMesas, (index) {
+                    final mesa = (index + 1).toString();
+                    final isAssignedToOther = assignedMesas.contains(mesa);
+                    return FilterChip(
+                      label: Text('Mesa $mesa'),
+                      selected: _selectedMesas.contains(mesa),
+                      onSelected: isAssignedToOther
+                          ? null
+                          : (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedMesas.add(mesa);
+                                } else {
+                                  _selectedMesas.remove(mesa);
+                                }
+                              });
+                            },
+                      selectedColor: AppColors.primary.withOpacity(0.2),
+                      checkmarkColor: AppColors.primary,
+                      disabledColor: Colors.grey.withOpacity(0.2),
+                    );
+                  }),
                 ),
               ],
             ),

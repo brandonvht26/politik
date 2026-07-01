@@ -137,30 +137,26 @@ class _LoginPageState extends State<LoginPage> {
                         },
                         builder: (context, state) {
                           final isLoading = state is AuthLoading;
-                          return Container(
-                            decoration: BoxDecoration(
-                              gradient: AppColors.metallicGradient,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: FilledButton.icon(
-                              onPressed: isLoading ? null : _login,
-                              icon: isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Icon(Icons.login, color: Colors.white),
-                              label: isLoading
-                                  ? const Text('Iniciando sesión...', style: TextStyle(color: Colors.white))
-                                  : const Text('Iniciar Sesión', style: TextStyle(color: Colors.white)),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                          return FilledButton.icon(
+                            onPressed: isLoading ? null : _login,
+                            icon: isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.login, color: Colors.white),
+                            label: isLoading
+                                ? const Text('Iniciando sesión...', style: TextStyle(color: Colors.white))
+                                : const Text('Iniciar Sesión', style: TextStyle(color: Colors.white)),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                           );
@@ -216,9 +212,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }

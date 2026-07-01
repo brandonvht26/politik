@@ -153,119 +153,137 @@ class _RecintoDashboardPageState extends State<RecintoDashboardPage> {
               final recinto = state.recinto;
               final veedores = state.veedores;
 
-              return RefreshIndicator(
-                onRefresh: () async => _loadData(),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      MetallicCard(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+              return DefaultTabController(
+                length: 3,
+                child: Column(
+                  children: [
+                    const TabBar(
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white70,
+                      indicatorColor: Colors.white,
+                      isScrollable: false,
+                      tabs: [
+                        Tab(text: 'Mesas', icon: Icon(Icons.table_bar)),
+                        Tab(text: 'Veedores', icon: Icon(Icons.people)),
+                        Tab(text: 'Actas Recibidas', icon: Icon(Icons.description)),
+                      ],
+                    ),
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        decoration: const BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                          child: TabBarView(
                             children: [
-                              Text(
-                                recinto.nombre,
-                                style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${recinto.canton} - ${recinto.parroquia}',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: Colors.white70,
-                                    ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.table_bar_rounded,
-                                    size: 18,
-                                    color: AppColors.accent,
+                              // Tab 1: Mesas
+                              RefreshIndicator(
+                                onRefresh: () async => _loadData(),
+                                child: SingleChildScrollView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      PremiumCard(
+                                        color: AppColors.primary,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                recinto.nombre,
+                                                style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${recinto.canton} - ${recinto.parroquia}',
+                                                style: theme.textTheme.bodyMedium?.copyWith(
+                                                      color: Colors.white70,
+                                                    ),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Row(
+                                                children: [
+                                                  const Icon(
+                                                    Icons.table_bar_rounded,
+                                                    size: 18,
+                                                    color: AppColors.accent,
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    '${recinto.numMesas} mesas (JRVs)',
+                                                    style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      _MesasList(
+                                        numMesas: recinto.numMesas,
+                                        veedores: veedores,
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '${recinto.numMesas} mesas (JRVs)',
-                                    style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
+                                ),
+                              ),
+
+                              // Tab 2: Veedores
+                              RefreshIndicator(
+                                onRefresh: () async => _loadData(),
+                                child: SingleChildScrollView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          TextButton.icon(
+                                            onPressed: () => _showCreateVeedorDialog(
+                                              context,
+                                              recinto.id,
+                                              recinto.numMesas,
+                                              veedores,
+                                            ),
+                                            icon: const Icon(Icons.person_add, size: 18),
+                                            label: const Text('Nuevo Veedor'),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      _VeedoresList(
+                                        veedores: veedores,
+                                        numMesas: recinto.numMesas,
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
+                              ),
+
+                              // Tab 3: Actas Recibidas
+                              RefreshIndicator(
+                                onRefresh: () async => _loadData(),
+                                child: SingleChildScrollView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.all(16),
+                                  child: _ActasRecibidasList(recintoId: recinto.id),
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Icon(Icons.table_bar,
-                              color: theme.colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Mesas',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      _MesasList(
-                        numMesas: recinto.numMesas,
-                        veedores: veedores,
-                      ),
-                      const SizedBox(height: 32),
-                      Row(
-                        children: [
-                          Icon(Icons.people,
-                              color: theme.colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Veedores',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          const Spacer(),
-                          TextButton.icon(
-                            onPressed: () => _showCreateVeedorDialog(
-                              context,
-                              recinto.id,
-                              recinto.numMesas,
-                            ),
-                            icon: const Icon(Icons.person_add, size: 18),
-                            label: const Text('Nuevo'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      _VeedoresList(
-                        veedores: veedores,
-                        numMesas: recinto.numMesas,
-                      ),
-                      const SizedBox(height: 32),
-                      Row(
-                        children: [
-                          Icon(Icons.description,
-                              color: theme.colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Actas Recibidas',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      _ActasRecibidasList(recintoId: recinto.id),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             }
@@ -273,7 +291,6 @@ class _RecintoDashboardPageState extends State<RecintoDashboardPage> {
             return const SizedBox.shrink();
           },
         ),
-      ),
     );
   }
 
@@ -281,12 +298,14 @@ class _RecintoDashboardPageState extends State<RecintoDashboardPage> {
     BuildContext context,
     String recintoId,
     int numMesas,
+    List<UserProfileEntity> veedores,
   ) {
     showDialog(
       context: context,
       builder: (_) => CreateVeedorDialog(
         recintoId: recintoId,
         numMesas: numMesas,
+        allVeedores: veedores,
       ),
     );
   }
@@ -304,41 +323,72 @@ class _MesasList extends StatelessWidget {
       return const _EmptyState(message: 'El recinto no tiene mesas asignadas.');
     }
 
-    return ListView.separated(
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: numMesas,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.2,
+      ),
       itemBuilder: (context, index) {
         final mesaNumero = (index + 1).toString();
-        final asignado = veedores.where((v) => v.mesaId == mesaNumero).toList();
+        // Check if any veedor has this mesa assigned (comma-separated string)
+        final asignado = veedores.where((v) {
+          if (v.mesaId == null || v.mesaId!.trim().isEmpty) return false;
+          final mesas = v.mesaId!.split(',').map((e) => e.trim()).toSet();
+          return mesas.contains(mesaNumero);
+        }).toList();
 
-        return MetallicCard(
-          child: ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: Colors.transparent,
-              child: Icon(Icons.table_bar_rounded, size: 28),
-            ),
-            title: Text('Mesa $mesaNumero'),
-            subtitle: asignado.isEmpty
-                ? const Text('Sin asignar',
-                    style: TextStyle(fontStyle: FontStyle.italic, color: Colors.white70))
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: asignado
-                        .map((v) => Text('• ${v.nombreCompleto}', style: const TextStyle(color: Colors.white70)))
-                        .toList(),
+        final hasVeedor = asignado.isNotEmpty;
+
+        return PremiumCard(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Mesa $mesaNumero',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              if (!hasVeedor)
+                const Text(
+                  'Sin asignar',
+                  style: TextStyle(fontStyle: FontStyle.italic, color: Colors.black54),
+                )
+              else ...[
+                Text(
+                  asignado.first.nombreCompleto,
+                  style: const TextStyle(color: AppColors.primary, fontSize: 12),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                InkWell(
+                  onTap: () {
+                    final veedor = asignado.first;
+                    final currentMesas = veedor.mesaId!.split(',').map((e) => e.trim()).toSet();
+                    currentMesas.remove(mesaNumero);
+                    final newMesaId = currentMesas.toList()..sort();
+                    context.read<RecintoBloc>().add(
+                          ReassignVeedorMesaRequested(
+                            cedula: veedor.cedula,
+                            newMesaId: newMesaId.join(','),
+                          ),
+                        );
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4.0),
+                    child: Icon(Icons.person_remove, color: Colors.redAccent, size: 20),
                   ),
-            trailing: asignado.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.edit),
-                    tooltip: 'Reasignar veedor',
-                    onPressed: () => _showReassignDialog(
-                      context,
-                      asignado.first,
-                    ),
-                  )
-                : null,
+                ),
+              ],
+            ],
           ),
         );
       },
@@ -348,12 +398,14 @@ class _MesasList extends StatelessWidget {
   void _showReassignDialog(
     BuildContext context,
     UserProfileEntity veedor,
+    List<UserProfileEntity> allVeedores,
   ) {
     showDialog(
       context: context,
       builder: (_) => ReassignMesaDialog(
         veedor: veedor,
         numMesas: numMesas,
+        allVeedores: allVeedores,
       ),
     );
   }
@@ -381,28 +433,35 @@ class _VeedoresList extends StatelessWidget {
         return PremiumCard(
           hasDecoration: true,
           decorationColor: AppColors.secondary.withOpacity(0.1),
-          child: ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: AppColors.secondary,
-              child: Icon(Icons.person_pin_rounded, color: Colors.white, size: 24),
-            ),
-            title: Text(v.nombreCompleto, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Cédula: ${v.cedula}', style: const TextStyle(color: Colors.black54)),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Chip(
-                  label: Text('Mesa ${v.mesaId ?? "-"}'),
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                  labelStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
-                  side: BorderSide.none,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: AppColors.primary),
-                  tooltip: 'Reasignar mesa',
-                  onPressed: () => _showReassignDialog(context, v),
-                ),
-              ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              leading: const CircleAvatar(
+                backgroundColor: AppColors.secondary,
+                child: Icon(Icons.person_pin_rounded, color: Colors.white, size: 24),
+              ),
+              title: Text(v.nombreCompleto, style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('Cédula: ${v.cedula}', style: const TextStyle(color: Colors.black54)),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      v.mesaId != null && v.mesaId!.trim().isNotEmpty
+                          ? 'Mesas: ${v.mesaId}'
+                          : 'Sin Mesas',
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: AppColors.primary, size: 20),
+                    tooltip: 'Reasignar mesa',
+                    onPressed: () => _showReassignDialog(context, v, veedores),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -410,12 +469,13 @@ class _VeedoresList extends StatelessWidget {
     );
   }
 
-  void _showReassignDialog(BuildContext context, UserProfileEntity veedor) {
+  void _showReassignDialog(BuildContext context, UserProfileEntity veedor, List<UserProfileEntity> allVeedores) {
     showDialog(
       context: context,
       builder: (_) => ReassignMesaDialog(
         veedor: veedor,
         numMesas: numMesas,
+        allVeedores: allVeedores,
       ),
     );
   }

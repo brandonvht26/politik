@@ -70,7 +70,6 @@ class RecintoDetailAdminPage extends StatelessWidget {
             );
           },
         ),
-      ),
     );
   }
 

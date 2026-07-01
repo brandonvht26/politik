@@ -1,12 +1,17 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/presentation/widgets/premium_card.dart';
+import '../../../../core/presentation/widgets/premium_scaffold.dart';
+import '../../../../core/services/appwrite_service.dart';
 import '../../domain/entities/voto_partido_local_entity.dart';
 import '../bloc/acta_bloc.dart';
 import '../bloc/acta_event.dart';
 import 'camera_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:appwrite/appwrite.dart' as appwrite_sdk;
 
 class ActaFormPage extends StatefulWidget {
   final String tipo;
@@ -31,13 +36,8 @@ class ActaFormPage extends StatefulWidget {
 class _ActaFormPageState extends State<ActaFormPage> {
   final _formKey = GlobalKey<FormState>();
 
-  static const _organizaciones = [
-    'Partido A - Movimiento Nacional',
-    'Partido B - Alianza Popular',
-    'Partido C - Frente Democrático',
-    'Partido D - Unión Cívica',
-    'Partido E - Renovación',
-  ];
+  List<String> _organizaciones = [];
+  bool _isLoadingOrgs = true;
 
   final Map<String, TextEditingController> _controllers = {};
   final TextEditingController _blancosCtrl = TextEditingController();
@@ -49,19 +49,56 @@ class _ActaFormPageState extends State<ActaFormPage> {
   @override
   void initState() {
     super.initState();
-    for (final org in _organizaciones) {
-      _controllers[org] = TextEditingController(
-        text: widget.initialData?['votos_partidos']?[org]?.toString() ?? '',
-      );
-    }
+    
     _blancosCtrl.text = widget.initialData?['votos_blancos']?.toString() ?? '';
     _nulosCtrl.text = widget.initialData?['votos_nulos']?.toString() ?? '';
     _sufragantesCtrl.text = widget.initialData?['total_sufragantes']?.toString() ?? '';
+
+    _fetchOrganizaciones();
 
     if (!widget.isReadOnly && widget.initialData == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showHelpModal();
       });
+    }
+  }
+
+  Future<void> _fetchOrganizaciones() async {
+    try {
+      final appwrite = AppwriteService();
+      final response = await appwrite.databases.listDocuments(
+        databaseId: appwrite.databaseId,
+        collectionId: appwrite.organizacionesPoliticasCollectionId,
+        queries: [
+          appwrite_sdk.Query.equal('dignidad', widget.tipo),
+        ],
+      );
+      
+      final orgs = <String>[];
+      for (var doc in response.documents) {
+        final partido = doc.data['partido']?.toString() ?? '';
+        final candidato = doc.data['candidato']?.toString() ?? '';
+        final label = '$partido - $candidato';
+        orgs.add(label);
+        
+        _controllers[label] = TextEditingController(
+          text: widget.initialData?['votos_partidos']?[label]?.toString() ?? '',
+        );
+      }
+      
+      if (mounted) {
+        setState(() {
+          _organizaciones = orgs;
+          _isLoadingOrgs = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error al cargar organizaciones: $e';
+          _isLoadingOrgs = false;
+        });
+      }
     }
   }
 
@@ -201,11 +238,107 @@ class _ActaFormPageState extends State<ActaFormPage> {
       subtitle: 'Ingresa los resultados cuidadosamente',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: PremiumCard(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
+        child: Column(
+          children: [
+            if (widget.initialData?['image_id'] != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: PremiumCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.image, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Text('Fotografía Original', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        FutureBuilder<Uint8List>(
+                          future: AppwriteService().storage.getFilePreview(
+                            bucketId: AppwriteService().storageBucketId,
+                            fileId: widget.initialData!['image_id'],
+                          ),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Container(
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Center(child: CircularProgressIndicator()),
+                              );
+                            } else if (snapshot.hasError || !snapshot.hasData) {
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Column(
+                                  children: [
+                                    Icon(Icons.broken_image, color: Colors.grey, size: 48),
+                                    SizedBox(height: 8),
+                                    Text('No se pudo cargar la imagen.'),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      insetPadding: const EdgeInsets.all(16),
+                                      child: Stack(
+                                        alignment: Alignment.topRight,
+                                        children: [
+                                          InteractiveViewer(
+                                            child: Image.memory(snapshot.data!),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                            onPressed: () => Navigator.of(context).pop(),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Image.memory(
+                                  snapshot.data!,
+                                  height: 250,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  alignment: Alignment.topCenter,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            PremiumCard(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: _isLoadingOrgs
+                    ? const Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
@@ -334,7 +467,7 @@ class _ActaFormPageState extends State<ActaFormPage> {
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

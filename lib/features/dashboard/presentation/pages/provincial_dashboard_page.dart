@@ -132,14 +132,25 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                 child: Column(
                   children: [
                     const TabBar(
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white70,
+                      indicatorColor: Colors.white,
                       tabs: [
                         Tab(text: 'Gestión', icon: Icon(Icons.admin_panel_settings)),
                         Tab(text: 'Resultados', icon: Icon(Icons.bar_chart)),
                       ],
                     ),
                     Expanded(
-                      child: TabBarView(
-                        children: [
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        decoration: const BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                          child: TabBarView(
+                            children: [
                           // Tab 1: Gestión (Recintos y Coordinadores)
                           RefreshIndicator(
                             onRefresh: () async => _loadData(),
@@ -211,6 +222,8 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
                           ),
                         ],
                       ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -219,7 +232,6 @@ class _ProvincialDashboardPageState extends State<ProvincialDashboardPage> {
             return const SizedBox.shrink();
           },
         ),
-      ),
     );
   }
 
@@ -446,12 +458,14 @@ class _ResultadosTab extends StatelessWidget {
     // Inicializar organizaciones
     for (var org in organizacionesPoliticas) {
       try {
-        final nombre = org['nombre_partido']?.toString() ?? '';
+        final partido = org['partido']?.toString() ?? '';
+        final candidato = org['candidato']?.toString() ?? '';
+        final label = '$partido - $candidato';
         final dignidad = org['dignidad']?.toString() ?? '';
-        if (dignidad == 'alcalde' && nombre.isNotEmpty) {
-          votosAlcalde[nombre] = 0;
-        } else if (dignidad == 'prefecto' && nombre.isNotEmpty) {
-          votosPrefecto[nombre] = 0;
+        if (dignidad == 'alcalde' && partido.isNotEmpty) {
+          votosAlcalde[label] = 0;
+        } else if (dignidad == 'prefecto' && partido.isNotEmpty) {
+          votosPrefecto[label] = 0;
         }
       } catch (e) {
         debugPrint('Error parseando organizacion: $e');

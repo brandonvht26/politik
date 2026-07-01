@@ -16,8 +16,65 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import 'acta_form_page.dart';
 
-class MisMesasPage extends StatelessWidget {
+class MisMesasPage extends StatefulWidget {
   const MisMesasPage({super.key});
+
+  @override
+  State<MisMesasPage> createState() => _MisMesasPageState();
+}
+
+class _MisMesasPageState extends State<MisMesasPage> {
+  String _nombreRecinto = 'Cargando recinto...';
+  String _nombreVeedor = 'Cargando datos...';
+  bool _isLoadingInfo = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdditionalInfo();
+  }
+
+  Future<void> _loadAdditionalInfo() async {
+    final session = LocalStorageService.sessionBox.get('current');
+    if (session == null) {
+      if (mounted) setState(() => _isLoadingInfo = false);
+      return;
+    }
+
+    try {
+      final appwrite = AppwriteService();
+      
+      // Load recinto name
+      if (session.recintoId != null) {
+        final recintoDoc = await appwrite.databases.getDocument(
+          databaseId: appwrite.databaseId,
+          collectionId: appwrite.recintosCollectionId,
+          documentId: session.recintoId!,
+        );
+        _nombreRecinto = recintoDoc.data['nombre'] ?? 'Recinto Desconocido';
+      }
+
+      // Load veedor name
+      final veedorDoc = await appwrite.databases.getDocument(
+        databaseId: appwrite.databaseId,
+        collectionId: appwrite.profilesCollectionId,
+        documentId: session.cedula,
+      );
+      final nombres = veedorDoc.data['nombres'] ?? '';
+      final apellidos = veedorDoc.data['apellidos'] ?? '';
+      _nombreVeedor = '$nombres $apellidos'.trim();
+      
+    } catch (e) {
+      _nombreRecinto = 'Recinto: ${session.recintoId ?? "No asignado"}';
+      _nombreVeedor = 'Veedor: ${session.cedula}';
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingInfo = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,22 +114,39 @@ class MisMesasPage extends StatelessWidget {
                           child: Icon(Icons.table_bar_rounded, size: 24, color: Colors.white),
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          'Mesa N°$mesaId',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            color: theme.colorScheme.onSurface,
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          child: Text(
+                            mesaId.contains(',') ? 'Mesas N°$mesaId' : 'Mesa N°$mesaId',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              color: theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      'Recinto: $recintoId',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.black54,
-                          ),
-                    ),
+                    if (_isLoadingInfo)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8.0),
+                        child: LinearProgressIndicator(),
+                      )
+                    else ...[
+                      Text(
+                        _nombreRecinto,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Veedor: $_nombreVeedor',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.black87,
+                            ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -118,7 +192,55 @@ class MisMesasPage extends StatelessWidget {
     );
   }
 
-  void _navegarActa(BuildContext context, String tipo, String recintoId, String mesaId) async {
+  void _navegarActa(BuildContext context, String tipo, String recintoId, String mesaIdRaw) async {
+    final mesasList = mesaIdRaw.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+
+    if (mesasList.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No tienes mesas asignadas')));
+      return;
+    }
+
+    if (mesasList.length == 1) {
+      _continuarNavegacionActa(context, tipo, recintoId, mesasList.first);
+    } else {
+      // Show selection dialog
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: AppColors.surface,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        builder: (ctx) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Selecciona la mesa para acta de ${tipo.toUpperCase()}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 16),
+                  ...mesasList.map((mesa) {
+                    return ListTile(
+                      leading: const Icon(Icons.table_bar, color: AppColors.accent),
+                      title: Text('Mesa N°$mesa', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _continuarNavegacionActa(context, tipo, recintoId, mesa);
+                      },
+                    );
+                  }),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  void _continuarNavegacionActa(BuildContext context, String tipo, String recintoId, String mesaId) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -141,7 +263,6 @@ class MisMesasPage extends StatelessWidget {
 
       if (docs.documents.isNotEmpty) {
         existingData = docs.documents.first.data;
-        // The data is a map. Wait, votos_partidos is a JSON string in Appwrite!
         if (existingData['votos_partidos'] is String) {
           existingData['votos_partidos'] = jsonDecode(existingData['votos_partidos']);
         }

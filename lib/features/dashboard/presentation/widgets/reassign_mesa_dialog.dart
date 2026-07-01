@@ -9,11 +9,13 @@ import '../bloc/recinto_event.dart';
 class ReassignMesaDialog extends StatefulWidget {
   final UserProfileEntity veedor;
   final int numMesas;
+  final List<UserProfileEntity> allVeedores;
 
   const ReassignMesaDialog({
     super.key,
     required this.veedor,
     required this.numMesas,
+    required this.allVeedores,
   });
 
   @override
@@ -21,11 +23,30 @@ class ReassignMesaDialog extends StatefulWidget {
 }
 
 class _ReassignMesaDialogState extends State<ReassignMesaDialog> {
-  String? _newMesaId;
+  final Set<String> _selectedMesas = {};
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.veedor.mesaId != null && widget.veedor.mesaId!.trim().isNotEmpty) {
+      _selectedMesas.addAll(widget.veedor.mesaId!.split(',').map((e) => e.trim()));
+    }
+  }
+
+  Set<String> _getAssignedMesas() {
+    final assigned = <String>{};
+    for (final v in widget.allVeedores) {
+      if (v.cedula != widget.veedor.cedula && v.mesaId != null && v.mesaId!.trim().isNotEmpty) {
+        assigned.addAll(v.mesaId!.split(',').map((e) => e.trim()));
+      }
+    }
+    return assigned;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final assignedMesas = _getAssignedMesas();
 
     return AlertDialog(
       backgroundColor: AppColors.surface,
@@ -34,28 +55,44 @@ class _ReassignMesaDialogState extends State<ReassignMesaDialog> {
         side: const BorderSide(color: AppColors.accent, width: 2),
       ),
       elevation: 20,
-      title: const Text('Reasignar Mesa', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+      title: const Text('Reasignar Mesas', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
       content: SizedBox(
         width: double.maxFinite,
-        child: DropdownButtonFormField<String>(
-          initialValue: _newMesaId,
-          decoration: const InputDecoration(
-            labelText: 'Nueva mesa',
-            prefixIcon: Icon(Icons.table_bar),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Selecciona las mesas a asignar:'),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: List.generate(widget.numMesas, (index) {
+                  final mesa = (index + 1).toString();
+                  final isAssignedToOther = assignedMesas.contains(mesa);
+                  return FilterChip(
+                    label: Text('Mesa $mesa'),
+                    selected: _selectedMesas.contains(mesa),
+                    onSelected: isAssignedToOther
+                        ? null
+                        : (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedMesas.add(mesa);
+                              } else {
+                                _selectedMesas.remove(mesa);
+                              }
+                            });
+                          },
+                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    checkmarkColor: AppColors.primary,
+                    disabledColor: Colors.grey.withOpacity(0.2),
+                  );
+                }),
+              ),
+            ],
           ),
-          items: List.generate(
-            widget.numMesas,
-            (index) {
-              final mesa = (index + 1).toString();
-              return DropdownMenuItem(
-                value: mesa,
-                child: Text('Mesa $mesa'),
-              );
-            },
-          ).where((item) => item.value != widget.veedor.mesaId).toList(),
-          onChanged: (value) => setState(() => _newMesaId = value),
-          validator: (v) =>
-              v == null || v.isEmpty ? 'Seleccione una mesa' : null,
         ),
       ),
       actions: [
@@ -64,18 +101,17 @@ class _ReassignMesaDialogState extends State<ReassignMesaDialog> {
           child: Text('Cancelar', style: TextStyle(color: theme.colorScheme.error)),
         ),
         FilledButton(
-          onPressed: _newMesaId == null
-              ? null
-              : () {
-                  context.read<RecintoBloc>().add(
-                        ReassignVeedorMesaRequested(
-                          cedula: widget.veedor.cedula,
-                          newMesaId: _newMesaId!,
-                        ),
-                      );
-                  Navigator.of(context).pop();
-                },
-          child: const Text('Reasignar'),
+          onPressed: () {
+            final newMesaId = _selectedMesas.toList()..sort();
+            context.read<RecintoBloc>().add(
+                  ReassignVeedorMesaRequested(
+                    cedula: widget.veedor.cedula,
+                    newMesaId: newMesaId.join(','),
+                  ),
+                );
+            Navigator.of(context).pop();
+          },
+          child: const Text('Guardar'),
         ),
       ],
     );

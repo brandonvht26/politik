@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/presentation/widgets/premium_card.dart';
 import '../../../../core/presentation/widgets/premium_scaffold.dart';
+import '../../../../core/services/appwrite_service.dart';
 
 class ActaDetailAdminPage extends StatefulWidget {
   final Map<String, dynamic> acta;
@@ -148,7 +150,10 @@ class _ActaDetailAdminPageState extends State<ActaDetailAdminPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(e.key, style: const TextStyle(fontWeight: FontWeight.w500)),
+                            Expanded(
+                              child: Text(e.key, style: const TextStyle(fontWeight: FontWeight.w500)),
+                            ),
+                            const SizedBox(width: 8),
                             Text('${e.value} votos'),
                           ],
                         ),
@@ -197,22 +202,71 @@ class _ActaDetailAdminPageState extends State<ActaDetailAdminPage> {
                           ],
                         ),
                         const Divider(height: 24),
-                        // Appwrite images usually need authorization or are public. 
-                        // Just indicating it was uploaded for now.
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
+                        FutureBuilder<Uint8List>(
+                          future: AppwriteService().storage.getFilePreview(
+                            bucketId: AppwriteService().storageBucketId,
+                            fileId: imageId,
                           ),
-                          child: Column(
-                            children: [
-                              const Icon(Icons.check_circle, color: Colors.green, size: 48),
-                              const SizedBox(height: 8),
-                              const Text('Imagen subida correctamente al servidor.'),
-                              Text('ID: $imageId', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                            ],
-                          ),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Container(
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Center(child: CircularProgressIndicator()),
+                              );
+                            } else if (snapshot.hasError || !snapshot.hasData) {
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  children: [
+                                    const Icon(Icons.broken_image, color: Colors.grey, size: 48),
+                                    const SizedBox(height: 8),
+                                    const Text('No se pudo cargar la imagen.'),
+                                    Text('ID: $imageId', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => Dialog(
+                                      backgroundColor: Colors.transparent,
+                                      insetPadding: const EdgeInsets.all(16),
+                                      child: Stack(
+                                        alignment: Alignment.topRight,
+                                        children: [
+                                          InteractiveViewer(
+                                            child: Image.memory(snapshot.data!),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                            onPressed: () => Navigator.of(context).pop(),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Image.memory(
+                                  snapshot.data!,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -221,7 +275,6 @@ class _ActaDetailAdminPageState extends State<ActaDetailAdminPage> {
             ],
           ),
         ),
-      ),
     );
   }
 }
