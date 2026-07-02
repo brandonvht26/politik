@@ -229,6 +229,12 @@ class _ActaDetailAdminPageState extends State<ActaDetailAdminPage> {
                                     const Icon(Icons.broken_image, color: Colors.grey, size: 48),
                                     const SizedBox(height: 8),
                                     const Text('No se pudo cargar la imagen.'),
+                                    if (snapshot.error != null)
+                                      Text(
+                                        'Error: ${snapshot.error}',
+                                        style: const TextStyle(fontSize: 10, color: Colors.red),
+                                        textAlign: TextAlign.center,
+                                      ),
                                     Text('ID: $imageId', style: const TextStyle(fontSize: 10, color: Colors.grey)),
                                   ],
                                 ),
