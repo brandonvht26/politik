@@ -348,16 +348,19 @@ class _MesasList extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
                 'Mesa $mesaNumero',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               if (!hasVeedor)
                 const Text(
                   'Sin asignar',
                   style: TextStyle(fontStyle: FontStyle.italic, color: Colors.black54),
+                  textAlign: TextAlign.center,
                 )
               else ...[
                 Text(

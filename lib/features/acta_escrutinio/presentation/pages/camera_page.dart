@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:connectivity_plus/connectivity_plus.dart' as import_connectivity;
 
 import '../../../../core/services/local_storage_service.dart';
 import '../../domain/entities/voto_partido_local_entity.dart';
@@ -45,12 +46,16 @@ class _CameraPageState extends State<CameraPage> {
         if (state is ActaPhotoCaptured) {
           setState(() => _capturedImagePath = state.imagePath);
         } else if (state is ActaSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Acta guardada offline correctamente'),
-              backgroundColor: Color(0xFF16A34A),
-            ),
-          );
+          import_connectivity.Connectivity().checkConnectivity().then((result) {
+            if (!mounted) return;
+            final isOffline = result == import_connectivity.ConnectivityResult.none;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(isOffline ? 'Acta guardada offline correctamente' : 'Acta enviada correctamente'),
+                backgroundColor: const Color(0xFF16A34A),
+              ),
+            );
+          });
           Navigator.popUntil(context, (route) => route.isFirst);
         } else if (state is ActaValidationError || state is ActaError) {
           final message = state is ActaValidationError

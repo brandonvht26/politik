@@ -262,7 +262,7 @@ class _MisMesasPageState extends State<MisMesasPage> {
       );
 
       if (docs.documents.isNotEmpty) {
-        existingData = docs.documents.first.data;
+        existingData = Map<String, dynamic>.from(docs.documents.first.data);
         if (existingData['votos_partidos'] is String) {
           existingData['votos_partidos'] = jsonDecode(existingData['votos_partidos']);
         }

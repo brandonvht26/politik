@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Paleta Institucional / CNE / Elecciones
-  static const Color primary = Color(0xFF0D3261); // Azul oscuro institucional
-  static const Color secondary = Color(0xFF1F61B5); // Azul medio
-  static const Color accent = Color(0xFFF9A825); // Amarillo / Dorado para destacar botones o advertencias
+  // Paleta Institucional - Gobierno Ecuatoriano
+  static const Color primary = Color(0xFF1B2956); // Azul profundo Gobierno
+  static const Color secondary = Color(0xFFDB2729); // Rojo Gobierno
+  static const Color accent = Color(0xFFF7B216); // Amarillo Gobierno
   
   static const Color background = Color(0xFFF8FAFC); // Gris muy claro para el fondo
   static const Color surface = Colors.white; // Fondo de tarjetas / contenedores
@@ -17,13 +17,13 @@ class AppColors {
 
   // Gradients for UI upgrade
   static const LinearGradient metallicGradient = LinearGradient(
-    colors: [Color(0xFF0D3261), Color(0xFF1F61B5), Color(0xFF0D3261)],
+    colors: [Color(0xFF1B2956), Color(0xFF283C7E), Color(0xFF1B2956)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient goldGradient = LinearGradient(
-    colors: [Color(0xFFF9A825), Color(0xFFFFD54F), Color(0xFFF9A825)],
+    colors: [Color(0xFFF7B216), Color(0xFFFFD54F), Color(0xFFF7B216)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
