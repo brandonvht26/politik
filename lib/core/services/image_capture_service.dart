@@ -8,7 +8,7 @@ class ImageCaptureService {
 
   static final ImagePicker _picker = ImagePicker();
   static final ImageQualityValidator _validator = ImageQualityValidator(
-    config: const QualityConfig(blurThreshold: 140.0),
+    config: const QualityConfig(blurThreshold: 130.0),
   );
 
   /// Opens the camera, validates image sharpness and returns the file path.

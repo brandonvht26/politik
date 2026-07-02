@@ -13,6 +13,10 @@ import 'camera_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:appwrite/appwrite.dart' as appwrite_sdk;
 
+import '../../../../core/injection_container.dart';
+import '../../../../core/services/sync_service.dart';
+import '../bloc/acta_state.dart';
+
 class ActaFormPage extends StatefulWidget {
   final String tipo;
   final bool isReadOnly;
@@ -233,10 +237,29 @@ class _ActaFormPageState extends State<ActaFormPage> {
     final theme = Theme.of(context);
     final tipoLabel = widget.tipo == 'alcalde' ? 'Alcalde' : 'Prefecto';
 
-    return PremiumScaffold(
-      title: 'Acta $tipoLabel',
-      subtitle: 'Ingresa los resultados cuidadosamente',
-      body: SingleChildScrollView(
+    return BlocListener<ActaBloc, ActaState>(
+      listener: (context, state) async {
+        if (state is ActaSuccess) {
+          // Sync forcefully and wait before returning so dashboard sees fresh data
+          await sl.syncService.forceSync();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Acta actualizada y sincronizada correctamente')),
+            );
+            Navigator.pop(context);
+          }
+        } else if (state is ActaError) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
+          }
+        }
+      },
+      child: PremiumScaffold(
+        title: 'Acta $tipoLabel',
+        subtitle: 'Ingresa los resultados cuidadosamente',
+        body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -476,7 +499,7 @@ class _ActaFormPageState extends State<ActaFormPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   void _guardarCambios() {
@@ -523,8 +546,8 @@ class _ActaFormPageState extends State<ActaFormPage> {
         );
         
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Guardando cambios...')),
+      const SnackBar(content: Text('Guardando y sincronizando cambios...')),
     );
-    Navigator.pop(context);
+    // Navigator.pop(context); // We will pop in the BlocListener after sync completes!
   }
 }

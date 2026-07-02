@@ -71,9 +71,13 @@ class SyncService {
   }
 
   void _trySync() {
-    if (!_hasConnection || !_isAuthenticated || _isSyncing) return;
+    forceSync();
+  }
 
-    _syncPendingActas();
+  /// Forces a sync operation and returns a Future that completes when done.
+  Future<void> forceSync() async {
+    if (!_hasConnection || !_isAuthenticated || _isSyncing) return;
+    await _syncPendingActas();
   }
 
   Future<void> _syncPendingActas() async {
