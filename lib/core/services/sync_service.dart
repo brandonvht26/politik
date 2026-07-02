@@ -9,6 +9,7 @@ import '../../features/acta_escrutinio/data/models/acta_escrutinio_local_model.d
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import 'appwrite_service.dart';
+import 'local_storage_service.dart';
 
 /// Background synchronization service for the Offline-First strategy.
 ///
@@ -28,6 +29,7 @@ class SyncService {
   bool _isAuthenticated = false;
   bool _hasConnection = false;
   bool _isSyncing = false;
+  RealtimeSubscription? _orgSubscription;
 
   SyncService({
     required AppwriteService appwriteService,
@@ -48,6 +50,7 @@ class SyncService {
     );
     _listenToConnectivity();
     _listenToAuthState();
+    _subscribeToOrganizaciones();
     _trySync();
   }
 
@@ -77,7 +80,52 @@ class SyncService {
   /// Forces a sync operation and returns a Future that completes when done.
   Future<void> forceSync() async {
     if (!_hasConnection || !_isAuthenticated || _isSyncing) return;
-    await _syncPendingActas();
+    await Future.wait([
+      _syncPendingActas(),
+      _syncOrganizaciones(),
+    ]);
+  }
+
+  void _subscribeToOrganizaciones() {
+    _orgSubscription = _appwrite.realtime.subscribe([
+      'databases.${_appwrite.databaseId}.collections.${_appwrite.organizacionesPoliticasCollectionId}.documents'
+    ]);
+    _orgSubscription!.stream.listen((event) {
+      if (event.payload.isNotEmpty) {
+        _syncOrganizaciones();
+      }
+    });
+  }
+
+  Future<void> _syncOrganizaciones() async {
+    if (!_hasConnection || !_isAuthenticated) return;
+    try {
+      final res = await _appwrite.databases.listDocuments(
+        databaseId: _appwrite.databaseId,
+        collectionId: _appwrite.organizacionesPoliticasCollectionId,
+        queries: [Query.limit(100)],
+      );
+      
+      final alcalde = <String>[];
+      final prefecto = <String>[];
+      
+      for (var doc in res.documents) {
+        final dignidad = doc.data['dignidad']?.toString() ?? '';
+        final partido = doc.data['partido']?.toString() ?? '';
+        final candidato = doc.data['candidato']?.toString() ?? '';
+        final label = '$partido - $candidato';
+        
+        if (dignidad == 'alcalde') alcalde.add(label);
+        if (dignidad == 'prefecto') prefecto.add(label);
+      }
+      
+      final box = LocalStorageService.organizacionesBox;
+      await box.put('alcalde', jsonEncode(alcalde));
+      await box.put('prefecto', jsonEncode(prefecto));
+      debugPrint('Organizaciones políticas sincronizadas en caché local');
+    } catch (e) {
+      debugPrint('Error al sincronizar organizaciones: $e');
+    }
   }
 
   Future<void> _syncPendingActas() async {

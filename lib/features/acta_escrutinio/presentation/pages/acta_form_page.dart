@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +16,7 @@ import 'package:appwrite/appwrite.dart' as appwrite_sdk;
 
 import '../../../../core/injection_container.dart';
 import '../../../../core/services/sync_service.dart';
+import '../../../../core/services/local_storage_service.dart';
 import '../bloc/acta_state.dart';
 
 class ActaFormPage extends StatefulWidget {
@@ -69,22 +71,17 @@ class _ActaFormPageState extends State<ActaFormPage> {
 
   Future<void> _fetchOrganizaciones() async {
     try {
-      final appwrite = AppwriteService();
-      final response = await appwrite.databases.listDocuments(
-        databaseId: appwrite.databaseId,
-        collectionId: appwrite.organizacionesPoliticasCollectionId,
-        queries: [
-          appwrite_sdk.Query.equal('dignidad', widget.tipo),
-        ],
-      );
-      
-      final orgs = <String>[];
-      for (var doc in response.documents) {
-        final partido = doc.data['partido']?.toString() ?? '';
-        final candidato = doc.data['candidato']?.toString() ?? '';
-        final label = '$partido - $candidato';
-        orgs.add(label);
-        
+      final box = LocalStorageService.organizacionesBox;
+      final cacheData = box.get(widget.tipo);
+
+      if (cacheData == null || cacheData.isEmpty) {
+        throw Exception('No se encontró información en caché. Conéctate a internet la primera vez.');
+      }
+
+      final List<dynamic> decodedList = jsonDecode(cacheData);
+      final orgs = decodedList.cast<String>().toList();
+
+      for (var label in orgs) {
         _controllers[label] = TextEditingController(
           text: widget.initialData?['votos_partidos']?[label]?.toString() ?? '',
         );
@@ -99,7 +96,7 @@ class _ActaFormPageState extends State<ActaFormPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Error al cargar organizaciones: $e';
+          _errorMessage = 'Error al cargar organizaciones offline: $e';
           _isLoadingOrgs = false;
         });
       }

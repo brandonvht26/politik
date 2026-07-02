@@ -512,7 +512,7 @@ class _ActasRecibidasList extends StatefulWidget {
 }
 
 class _ActasRecibidasListState extends State<_ActasRecibidasList> {
-  List<appwrite_models.Document> _actas = [];
+  List<Map<String, dynamic>> _actas = [];
   bool _isLoading = true;
 
   @override
@@ -522,6 +522,7 @@ class _ActasRecibidasListState extends State<_ActasRecibidasList> {
   }
 
   Future<void> _loadActas() async {
+    List<Map<String, dynamic>> remoteActas = [];
     try {
       final appwrite = AppwriteService();
       final res = await appwrite.databases.listDocuments(
@@ -531,16 +532,52 @@ class _ActasRecibidasListState extends State<_ActasRecibidasList> {
           appwrite_sdk.Query.equal('recinto_id', widget.recintoId),
         ],
       );
-      if (mounted) {
-        setState(() {
-          _actas = res.documents;
-          _isLoading = false;
-        });
-      }
+      remoteActas = res.documents.map((d) => Map<String, dynamic>.from(d.data)).toList();
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
+      // Ignorar el error si estamos offline, seguiremos con las actas locales
+    }
+
+    final localActas = LocalStorageService.actasLocalesBox.values
+        .where((acta) => acta.recintoId == widget.recintoId)
+        .toList();
+
+    final mergedMap = <String, Map<String, dynamic>>{};
+    
+    // Primero añadimos las remotas
+    for (var acta in remoteActas) {
+      final key = '${acta['dignidad']}_${acta['id_jrv']}';
+      mergedMap[key] = acta;
+    }
+
+    // Luego sobrescribimos/añadimos las locales (offline priority)
+    for (var localActa in localActas) {
+      final key = '${localActa.tipo}_${localActa.mesaId}';
+      
+      final votosMap = <String, int>{};
+      for (final voto in localActa.votosPartidos) {
+        votosMap[voto.nombreOrganizacion] = voto.cantidadVotos;
       }
+
+      mergedMap[key] = {
+        'recinto_id': localActa.recintoId,
+        'id_jrv': localActa.mesaId,
+        'dignidad': localActa.tipo,
+        'votos_partidos': jsonEncode(votosMap),
+        'votos_blancos': localActa.votosBlancos,
+        'votos_nulos': localActa.votosNulos,
+        'total_sufragantes': localActa.totalSufragantes,
+        'latitud': localActa.latitud,
+        'longitud': localActa.longitud,
+        'image_id': localActa.imageId,
+        'is_local_syncing': !localActa.isSynced,
+      };
+    }
+
+    if (mounted) {
+      setState(() {
+        _actas = mergedMap.values.toList();
+        _isLoading = false;
+      });
     }
   }
 
@@ -554,22 +591,23 @@ class _ActasRecibidasListState extends State<_ActasRecibidasList> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _actas.length,
       itemBuilder: (context, index) {
-        final doc = _actas[index];
-        final data = doc.data;
+        final data = _actas[index];
         // Parse JSON votos_partidos for the form
         Map<String, dynamic> actData = Map.from(data);
         if (actData['votos_partidos'] is String) {
           actData['votos_partidos'] = jsonDecode(actData['votos_partidos']);
         }
         
+        final isSyncing = data['is_local_syncing'] == true;
+        
         return PremiumCard(
           margin: const EdgeInsets.only(bottom: 12),
           hasDecoration: true,
           decorationColor: AppColors.accent.withOpacity(0.1),
           child: ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: AppColors.accent,
-              child: Icon(Icons.file_copy, color: Colors.white, size: 24),
+            leading: CircleAvatar(
+              backgroundColor: isSyncing ? Colors.orange : AppColors.accent,
+              child: Icon(isSyncing ? Icons.cloud_sync : Icons.file_copy, color: Colors.white, size: 24),
             ),
             title: Text('Acta ${data['dignidad'].toString().toUpperCase()} - JRV N°${data['id_jrv']}', style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text('Total Votos: ${data['total_sufragantes']}', style: const TextStyle(color: Colors.black54)),

@@ -65,6 +65,14 @@ class AuthRepositoryImpl implements AuthRepository {
         email: email,
         password: password,
       );
+
+      // Verificar si el correo ha sido confirmado
+      final accountData = await _appwrite.account.get();
+      if (!accountData.emailVerification) {
+        await _appwrite.account.deleteSession(sessionId: 'current');
+        throw Exception('Tu cuenta no ha sido verificada. Por favor, revisa tu correo electrónico para verificarla antes de iniciar sesión.');
+      }
+
     } on AppwriteException catch (e) {
       if (e.code == 401) {
         throw Exception('Contraseña incorrecta. (Asegúrate de haber creado el usuario con la contraseña Ecuador2026)');

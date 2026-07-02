@@ -21,10 +21,12 @@ class LocalStorageService {
   static const String _actasLocalesBoxName = 'actas_locales';
   static const String _sessionBoxName = 'session';
   static const String _legacyActasBoxName = 'actas';
+  static const String _organizacionesBoxName = 'organizaciones_politicas';
 
   static Box<ActaEscrutinioLocalModel>? _actasLocalesBox;
   static Box<SessionModel>? _sessionBox;
   static Box<ActaEscrutinioModel>? _legacyActasBox;
+  static Box<String>? _organizacionesBox;
 
   /// Initializes Flutter Hive, registers all adapters and opens every box.
   ///
@@ -52,6 +54,7 @@ class LocalStorageService {
     _sessionBox = await Hive.openBox<SessionModel>(_sessionBoxName);
     _legacyActasBox =
         await Hive.openBox<ActaEscrutinioModel>(_legacyActasBoxName);
+    _organizacionesBox = await Hive.openBox<String>(_organizacionesBoxName);
   }
 
   /// Box that stores local actas pending synchronization.
@@ -76,9 +79,18 @@ class LocalStorageService {
   static Box<ActaEscrutinioModel> get legacyActasBox {
     assert(
       _legacyActasBox != null,
-      'LocalStorageService has not been initialized. Call init() first.',
+      'LocalStorageService no inicializado. Llama a init() primero.',
     );
     return _legacyActasBox!;
+  }
+
+  /// Box that stores political organizations JSON caches.
+  static Box<String> get organizacionesBox {
+    assert(
+      _organizacionesBox != null,
+      'LocalStorageService no inicializado. Llama a init() primero.',
+    );
+    return _organizacionesBox!;
   }
 
   /// Closes all open boxes. Useful during integration testing teardown.

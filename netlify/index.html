@@ -230,7 +230,12 @@
                 
                 showSuccess();
             } catch (error) {
-                showError(error.message);
+                // Si ya está verificada, Appwrite lanza un error, pero para el usuario es un éxito.
+                if (error.message && error.message.toLowerCase().includes('already verified')) {
+                    showSuccess();
+                } else {
+                    showError(error.message);
+                }
             }
         }
 
@@ -246,7 +251,12 @@
         }
 
         function openApp() {
-            window.location.href = 'politik://verify';
+            let appUrl = 'politik://verify';
+            if (userId && secret) {
+                appUrl += '?userId=' + userId + '&secret=' + secret;
+            }
+            window.location.href = appUrl;
+            
             setTimeout(() => {
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                 if (!isMobile) {
