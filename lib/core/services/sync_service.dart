@@ -107,7 +107,6 @@ class SyncService {
           bucketId: _appwrite.storageBucketId,
           fileId: ID.unique(),
           file: InputFile.fromPath(path: acta.imageLocalPath),
-          permissions: [Permission.read(Role.any())],
         );
         imageId = uploadedFile.$id;
       }

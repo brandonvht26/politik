@@ -153,8 +153,20 @@
     </div>
 
     <div class="container">
+        <!-- ESTADO INICIAL -->
+        <div id="initial" class="state-container">
+            <div class="icon" style="background: #e0f2fe;">
+                <svg fill="#0ea5e9" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+            </div>
+            <h1>Confirmación de Cuenta</h1>
+            <p>Estás a un paso de completar tu registro en Politik. Haz clic en el botón de abajo para verificar tu cuenta.</p>
+            <button class="button" onclick="startVerification()">Verificar mi cuenta</button>
+        </div>
+
         <!-- ESTADO DE CARGA -->
-        <div id="loading" class="state-container">
+        <div id="loading" class="state-container hidden">
             <div class="icon loading">
                 <div class="loader"></div>
             </div>
@@ -188,49 +200,34 @@
     </div>
 
     <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+        const userId = urlParams.get('userId');
+        const secret = urlParams.get('secret');
+
+        function startVerification() {
+            document.getElementById('initial').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            setTimeout(verifyEmail, 800);
+        }
+
         async function verifyEmail() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const action = urlParams.get('action');
-            const userId = urlParams.get('userId');
-            const secret = urlParams.get('secret');
-
-            // Si es un enlace de recuperación de contraseña, redirigimos a la app nativa
-            if (action === 'reset') {
-                document.getElementById('loading').innerHTML = `
-                    <div class="icon success" style="background-color: #3b82f6;">
-                        <svg fill="#1E3A8A" viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
-                        </svg>
-                    </div>
-                    <h1>Redirigiendo a Politik...</h1>
-                    <p>Serás llevado a la aplicación para restablecer tu contraseña.</p>
-                    <button class="button" onclick="window.location.href = 'politik://com.example.plantilla_prueba/reset-password?userId=' + userId + '&secret=' + secret" style="margin-top: 16px;">Abrir Aplicación</button>
-                `;
-                
-                // Intentar abrir la app automáticamente
-                setTimeout(() => {
-                    window.location.href = 'politik://com.example.plantilla_prueba/reset-password?userId=' + userId + '&secret=' + secret;
-                }, 500);
-                return;
-            }
-
             if (!userId || !secret) {
                 showError('Parámetros incompletos en la URL de verificación.');
                 return;
             }
 
             try {
-                // 1. Inicializar Appwrite (Sustituimos el tuyo real de appwrite y SU ENDPOINT CORRECTO: nyc)
+                // 1. Inicializar Appwrite
                 const client = new Appwrite.Client()
                     .setEndpoint('https://nyc.cloud.appwrite.io/v1')
-                    .setProject('6a3d9de20033b2990675'); // Este es tu PROJECT ID, lo saqué de tu código
+                    .setProject('6a3d9de20033b2990675');
 
                 const account = new Appwrite.Account(client);
 
                 // 2. Ejecutar la validación con el SDK
                 await account.updateVerification(userId, secret);
                 
-                // Si llegamos aquí, fue exitoso!
                 showSuccess();
             } catch (error) {
                 showError(error.message);
@@ -249,11 +246,7 @@
         }
 
         function openApp() {
-            // Deep link nativo a la aplicación de Politik
-            // Android intentará abrir la app que tenga registrado el esquema 'politik://'
             window.location.href = 'politik://verify';
-            
-            // Fallback en caso de que estén en PC o no tengan la app instalada
             setTimeout(() => {
                 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                 if (!isMobile) {
@@ -262,10 +255,24 @@
             }, 1500);
         }
 
-        // Iniciar la magia apenas cargue la página
         window.onload = () => {
-            // Un pequeño timeout para que el loader de la animación se aprecie un segundo
-            setTimeout(verifyEmail, 800);
+            if (action === 'reset') {
+                document.getElementById('initial').classList.add('hidden');
+                document.getElementById('loading').classList.remove('hidden');
+                document.getElementById('loading').innerHTML = `
+                    <div class="icon success" style="background-color: #3b82f6;">
+                        <svg fill="#1E3A8A" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+                        </svg>
+                    </div>
+                    <h1>Redirigiendo a Politik...</h1>
+                    <p>Serás llevado a la aplicación para restablecer tu contraseña.</p>
+                    <button class="button" onclick="window.location.href = 'politik://com.example.plantilla_prueba/reset-password?userId=' + userId + '&secret=' + secret" style="margin-top: 16px;">Abrir Aplicación</button>
+                `;
+                setTimeout(() => {
+                    window.location.href = 'politik://com.example.plantilla_prueba/reset-password?userId=' + userId + '&secret=' + secret;
+                }, 500);
+            }
         };
     </script>
 </body>
